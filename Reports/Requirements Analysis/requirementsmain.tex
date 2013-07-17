@@ -1,0 +1,53 @@
+\documentclass[pdftex, 12pt, a4paper]{report}
+
+\newcommand{\HRule}{\rule{\linewidth}{0.5mm}}
+\usepackage{enumerate}
+\usepackage{graphicx}
+\usepackage{nameref}
+\usepackage{fancyhdr}
+\usepackage[english]{babel}
+%\usepackage[xindy]{glossaries}
+%\usepackage[toc]{glossaries}
+
+\begin{document}
+
+\pagestyle{fancy}
+\fancyhead{}
+\fancyhead[LE, LO] {\today}
+\fancyhead[CE, CO] {Requirements Analysis}
+\fancyhead[RE, RO] {version 1}
+\input{./title.tex}
+
+\input{./summary.tex}		%chapter
+\tableofcontents
+\pagebreak
+		
+\input{./introduction.tex}			%chapter
+\input{./currentsystem.tex}		%chapter
+\pagebreak
+
+\input{./proposedsystem.tex} 	%chapter
+\pagebreak
+
+\input{./functionalreq.tex}		%section
+\input{./nonfunctionalreq.tex}		%section
+\input{./boundaryconditions.tex}			%section
+\pagebreak
+
+\input{./analysemodels.tex} 		%section
+\input{./usecasemodel.tex}		%subsection
+\input{./usecasediagrams.tex}	%subsubsection
+\input{./scenarios.tex}			%subsubsection
+\input{./objectmodel.tex}			%subsection
+\input{./classdiagram.tex}			%subsubsection
+\input{./dynamicmodels.tex}		%subsection
+\input{./activitydiagram.tex}		%subsubsection
+\input{./sequence.tex}			%subsubsection
+%\input{./statediagrams.tex}	%subsubsection
+\input{./userinterface.tex}		%section
+
+\input{./appendixA.tex}			%appendix (sequence diagrams & class diagrams)
+
+
+
+\end{document}

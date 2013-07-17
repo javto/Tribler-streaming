@@ -1,0 +1,34 @@
+\documentclass[pdftex, 12pt, a4paper]{report}
+
+\newcommand{\HRule}{\rule{\linewidth}{0.5mm}}
+\usepackage{enumerate}
+\usepackage{graphicx}
+\usepackage{nameref}
+\usepackage{fancyhdr}
+\usepackage[english]{babel}
+%\usepackage[xindy]{glossaries}
+%usepackage[toc]{glossaries}
+
+\begin{document}
+
+\pagestyle{fancy}
+\fancyhead{}
+\fancyhead[LE, LO] {\today}
+\fancyhead[CE, CO] {Technical Design}
+\fancyhead[RE, RO] {version 1}
+
+\input{./title.tex}
+
+\input{./summary.tex}		%chapter
+\tableofcontents
+\pagebreak
+		
+\input{./introduction.tex}			%chapter	
+\pagebreak
+
+\input{./packages.tex}			%chapter
+\pagebreak
+
+\input{./classdiagram.tex} 		%chapter
+
+\end{document}

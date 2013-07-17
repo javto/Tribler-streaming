@@ -1,0 +1,18 @@
+\section{Functional requirements}
+
+\makeatletter
+\def\requirement#1#2{\begingroup
+   \def\@currentlabelname{#2}%
+   \label{#1}\endgroup
+  #2}
+\makeatother
+
+\def \reqref#1 {
+  \ref{#1}. \nameref{#1}.
+}
+
+\begin{enumerate}
+
+\item \requirement{req:short}{example};
+
+\end{enumerate}
