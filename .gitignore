@@ -28,9 +28,9 @@
 
 # Latex generated files #
 ######################
-.toc
-.aux
-.pdf
+*.toc
+*.aux
+*.pdf
 
 # OS generated files #
 ######################
