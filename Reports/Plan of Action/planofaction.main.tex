@@ -1,6 +1,8 @@
-\documentclass[pdftex, 12pt, a4paper]{report}
+\documentclass[pdftex, 10pt, a4paper]{report}
 
 \newcommand{\HRule}{\rule{\linewidth}{0.5mm}}
+\usepackage[style=numeric-comp]{biblatex}
+\bibliography{planofaction.main.bib}
 \usepackage{enumerate}
 \usepackage{graphicx}
 \usepackage[english]{babel}
@@ -16,11 +18,15 @@
 
 \input{./title.tex}
 
-\input{./summary.tex}			%chapter
 \tableofcontents
 
 \pagebreak
-\input{./preface.tex}					%chapter
+\input{./preface.tex}					%preface
+\pagebreak
+\input{./summary.tex}					%summary
+
+\input{Introduction/introduction.tex}		%chapter
+
 \iffalse	
 \input{./introduction.tex}				%chapter
 \input{./purposesystem.tex}				%section
