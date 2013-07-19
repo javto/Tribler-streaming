@@ -1,0 +1,30 @@
+\documentclass[pdftex, 12pt, a4paper]{report}
+
+\newcommand{\HRule}{\rule{\linewidth}{0.5mm}}
+\usepackage{enumerate}
+\usepackage{graphicx}
+\usepackage[english]{babel}
+\usepackage{fancyhdr}
+
+\begin{document}
+
+\pagestyle{fancy}
+\fancyhead{}
+\fancyhead[LE, LO] {\today}
+\fancyhead[CE, CO] {Plan of Action}
+\fancyhead[RE, RO] {version 1}
+
+\input{./title.tex}
+
+\input{./summary.tex}			%chapter
+\tableofcontents
+
+\pagebreak
+\input{./preface.tex}					%chapter
+\iffalse	
+\input{./introduction.tex}				%chapter
+\input{./purposesystem.tex}				%section
+\pagebreak
+\fi
+
+\end{document}
