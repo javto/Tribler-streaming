@@ -2,6 +2,7 @@
 
 \newcommand{\HRule}{\rule{\linewidth}{0.5mm}}
 \usepackage[style=numeric-comp]{biblatex}
+\usepackage[toc,page]{appendix}
 \bibliography{planofaction.main.bib}
 \usepackage{enumerate}
 \usepackage{graphicx}
@@ -28,11 +29,9 @@
 \input{Introduction/introduction.tex}				%chapter
 \input{ProjectAssignment/projectassignment.tex}		%chapter
 \input{Approach/approach.tex}					%chapter
+\input{ProjectDesign/projectdesign.tex}			%chapter
 
-\iffalse	
-\input{./introduction.tex}						%chapter
-\input{./purposesystem.tex}					%section
-\pagebreak
-\fi
-
+\begin{appendices}
+\input{Appendices/appendices.tex}				%chapter
+\end{appendices}
 \end{document}
