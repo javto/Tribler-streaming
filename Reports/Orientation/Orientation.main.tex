@@ -14,7 +14,7 @@
 \pagestyle{fancy}
 \fancyhead{}
 \fancyhead[LE, LO] {\today}
-\fancyhead[CE, CO] {Plan of Action}
+\fancyhead[CE, CO] {Orientation Report}
 \fancyhead[RE, RO] {version 1}
 
 \input{./title.tex}
@@ -22,14 +22,12 @@
 \tableofcontents
 
 \pagebreak
-\input{./preface.tex}						%preface
-\pagebreak
 \input{./abstract.tex}						%summary
 
-\input{Introduction/introduction.tex}				%chapter
-\input{ProjectAssignment/projectassignment.tex}		%chapter
-\input{Approach/approach.tex}					%chapter
-\input{ProjectDesign/projectdesign.tex}			%chapter
+\input{preface.tex}							%preface
+
+\input{P2P_streaming_protocol/main.tex}			%chapter
+\input{video_decoding/main.tex}					%chapter
 
 \begin{appendices}
 \input{Appendices/appendices.tex}				%chapter
