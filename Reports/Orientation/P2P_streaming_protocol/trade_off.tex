@@ -1,1 +1,32 @@
 \section{Trade-off}
+The following comparison is aimed to see which protocol is best suited for VoD on mobile devices. The following criteria are considered:
+\begin{itemize}
+	\item start-up time: how long it takes for a video stream to start playing.
+	\item stalls experienced: how often does the playback stop because the next part of the video is not ready.
+\end{itemize}
+Both criteria are heavily dependant on the ratio of seeders to leechers in the swarm. 
+
+\subsection{Start-up time}
+\begin{figure}[h]
+	\centering
+	\includegraphics{P2P_streaming_protocol/images/start_flash}
+	\caption{start-up times in a flashcrowd scenario}
+	\label{fig:start_flash}
+\end{figure}
+
+\begin{figure}[h]
+	\centering
+	\includegraphics{P2P_streaming_protocol/images/start_steady}
+	\caption{start-up times in a steady-state scenario}
+	\label{fig:start_steady}
+\end{figure}
+
+
+\subsection{Stalls}
+
+\begin{figure}[h]
+	\centering
+	\includegraphics{P2P_streaming_protocol/images/stalls}
+	\caption{average number of stalls experienced during playback}
+	\label{fig:stalls}
+\end{figure}
