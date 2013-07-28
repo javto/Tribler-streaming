@@ -1,0 +1,37 @@
+\section{An overview of Tribler}
+
+%insert image of the system architecture
+\begin{figure}[h]
+	\centering
+	\includegraphics[scale=0.4]{tribler/images/tribler_component_overview.jpg}
+	\caption{The architecture of Tribler}
+	\label{fig:tribler_components}
+\end{figure}
+
+Tribler consists out of four major components as can also be seen in figure \ref{fig:tribler_components}\footnote {http://sigmm.org/records/records1201/featured03.html}:
+\begin{itemize}
+	\item GUI: the graphical user interface.
+	\item BTengine: the bittorrent engine.
+	\item BuddyCast: a protocol used to find peers with the same taste as the user \footnote{http://iptps06.cs.ucsb.edu/papers/Pouw-Tribler06.pdf}.
+	\item Dispersy: a fully decentralized system for data bundle synchronization\footnote{http://www.pds.ewi.tudelft.nl/fileadmin/pds/reports/2013/PDS-2013-002.pdf}.
+\end{itemize}
+
+\subsection{GUI}
+\begin{figure}[h]
+	\centering
+	\includegraphics[scale=0.35]{tribler/images/tribler_gui.jpg}
+	\caption{Tribler's GUI}
+\end{figure}
+The GUI has a number of elements to it, resembling Tribler's main features:
+ \begin{itemize}
+	\item Top bar\\ This includes a search bar, a number of controls, and buttons to go into the settings and download external torrents. The controls include a button to start streaming the video instead of having to wait for it to be completely downloaded.
+	\item Left pane\\ The left pane gives an overview of the different pages to visit. Channels is a page where collections of content are bundled so the user can browse through them. The page below, the downloads page, shows which torrents have been downloaded and what the status is of the current download. The next page is the videoplayer where videos can be watched and streamed.
+	\item Bottom bar\\ At the bottom, information can be found how fast the download is going, as well as the upload and more information about how much peers the user is connected to.
+\end{itemize}
+
+\subsection{BitTorrent}
+BitTorrent is a protocol which allows for P2P file sharing, section \ref{sec:torrent_protocols} will describe more about other P2P file sharing protocols that might be used in the Mobile VoD project. The protocol allows users to join a swarm of hosts to download and upload files. For a user to share a file it can create a torrent descriptor file which contains information about the file. The torrent can then be distributed over the internet via e-mail, a link on a website, etc. Other users with the torrent can connect to this host, called a seeder, and ask for pieces of this file. After all pieces are collected, the leecher becomes a seeder and other leechers can download from the new seeder. This way the files is distributed over the Internet and no central server is needed.\\ 
+The BTengine in Tribler uses the BitTorrent protocol and also includes a reputation system, where the user is rated for their upload to download ratio. This helps to minimize the effects of free riding, where users only download, because the user with a low ratio will be given lower speed peers to connect to.
+
+\subsection{P2P communication}
+The BuddyCast protocol is used to find peers with similar taste so Tribler can give recommendations to what the user might like and thus discover new content. Dispersy is used to spread data bundles over the Internet in a fully decentralized way. This could potentially remove the need for central servers for services as Facebook or Wikipedia. In Tribler it is used for creating the channels.
