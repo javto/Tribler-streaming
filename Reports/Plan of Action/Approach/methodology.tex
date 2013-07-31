@@ -1,0 +1,24 @@
+\section{Methodology}
+\label{sec:meth}
+\subsection{Scrum}
+During the project several methods will be put into practice. One of these methods, namely Scrum\footnote{http://www.scrum.org}, will be used in all phases starting from the design phase. Scrum is an iterative and incremental Agile method. Scrum uses sprints in which the team goes through the process of adding functionality to the software, always maintaining a working version of the prototype. Given the relatively small timespan of the project, sprints of one week are chosen to ensure progress is measured frequently. Traditionally, the Scrum method defines a number of roles assigning different responsibilities to each of the team members. Since the team for this project solely consists of two persons, no specific roles are assigned. At the start of each sprint, a meeting; called a sprint planning, will be held. These meetings will be attended by the team members, as well as the supervisor. In this manner, the supervisor gets a better insight into what progress is made and is able to provide more meaningful feedback on the previous and upcoming tasks. In the sprint planning the following is discussed:
+\begin{itemize}
+\item[-]Which tasks have been completed during the last sprint.
+\item[-]Encountered impediments, if any.
+\item[-]Decide on which tasks have to be done in the upcoming sprint.
+\item[-]Determine the time it will take to complete the tasks and assign these to the team members.
+\end{itemize}
+The daily scrum meetings, also known as `standups', will only be attended by the team itself. During these meetings, the team will briefly discuss what each person did on the day before, what each person is going to do and if there are any impediments that need to be overcome. Furthermore, bi-weekly demo sessions wil be held with the client, to keep the client informed on the progression that is made.
+\subsection{MoSCoW}
+MoSCoW is the de facto standard in prioritizing a list of requirements into the following categories:
+\begin{itemize}
+\item[-] Must have: requirements that must be satisfied in the final solution for the solution to be considered a success.
+\item[-] Should have: high-priority requirements that should be included in the solution if possible.
+\item[-] Could have: requirements which are considered desirable but not necessary.
+\item[-] Would have: requirements that will not be implemented in a given release, but may be considered for the future.
+\end{itemize}
+The MoSCoW method will be used to prioritize the elicited requirements in the Requirements Analysis Document.
+\subsection{Test Driven Development}
+\label{sec:tdd}
+Conventionally, testing used to be done after the implementation of the software, by means of writing and executing test cases. This approach however, is criticised because often the tests are written based on the source code, instead of the functional requirements. A passing test in that case does not guarantee whether or not the function under test satisfies the functional requirements. Designing and writing the test cases beforehand ensures that the functional requirements are validated in an early stage. This approach is called Test Driven Development (hereafter: TDD). Another advantage of TDD is that it works well in combination with Agile methods such as the previously described Scrum method, because each time a new function is implemented, the associated tests can be immediately executed. As a consequence, the system that is being developed can be in a validated and verified state at all times during the development process.
+
