@@ -1,0 +1,4 @@
+\section{Stagefright}
+Stagefright is an open-source multimedia framework that comes built-in with the Android operating system.\footnote{http://source.android.com/devices/media.html}It includes support for playing a variety of common media file formats.\footnote{http://developer.android.com/guide/appendix/media-formats.html}
+\subsection{Features}
+Stagefright supports playback of multiple file formats. It also integrates with OpenMax\footnote{http://www.khronos.org/openmax/} codecs.
