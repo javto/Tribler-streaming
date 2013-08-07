@@ -11,16 +11,39 @@
   \ref{#1}. \nameref{#1}.
 }
 
-The prototype must do the following:
+\subsection{Must have}
+The prototype must have the following features:
 
 \begin{enumerate}
-\item \requirement{req:search}{Search for a video};
+\item \requirement{req:search}{Search for a video};\\
+The prototype must have a search bar in which the user types the name of the video the user is looking for, then the prototype should show a number of names of videos which closely, if not fully, resemble the searched name.
 
-\item \requirement{req:play}{Play a video};
+\item \requirement{req:play}{Play the selected video};\\
+When the user has selected a video from the before mentioned list, the user can then press a play button. After pressing the play button, the prototype will play the selected video.
 
-\item \requirement{req:pause}{Pause a video};
+\item \requirement{req:pause}{Pause the video};\\
+While playing the video, the user can press a pause button which will pause the video. The video can then be resumed by pressing the play button.
 
-\item \requirement{req:seek}{Seek in a video};
+\item \requirement{req:seek}{Seek in the video};\\
+A slider will be at the bottom of the video, with which the user can set the slider to a certain part of the video. The prototype then resumes play at that part of the video.
+
+\subsection{Should have}
+\item \requirement{req:download}{Download the selected video};\\
+The user can choose to download a video by means of pressing a download button so the user can watch it later instead of watching it immediately.
+
+\subsection{Could have}
+\item \requirement{req:channel}{Browse through 'channels' for videos};\\
+As seen in the Orientation Report section <<<<unknown>>>>, the desktop version of tribler has channels that allows users to browse through a collection of videos, a similar feature could be implemented in the prototype.
+
+\subsection{Would have}
+\item \requirement{req:seed}{Seed a video};\\
+While watching and downloading the video is only leeching, also seeding the already downloaded pieces of the video would increase the availability of pieces in the swarm.
+
+\item \requirement{req:upload}{Upload a video};\\
+While playing the video, the user can press a pause button which will pause the video. The video can then be resumed by pressing the play button.
+
+\item \requirement{req:platform}{Make the application available for other mobile platforms};\\
+The prototype will only be made on the mobile platfom: Android. It would however, be good to branch out to other mobile platforms such as iOS and Windows mobile in order to attract more users.
 
 \end{enumerate}
 
