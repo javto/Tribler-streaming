@@ -1,4 +1,9 @@
-\section{Android multimedia framework}
-The Android multimedia framework is an open-source framework that comes built-in with the Android operating system. It includes support for playing a variety of common media types.\footnote{http://developer.android.com/guide/topics/media/mediaplayer.html}
+\section{Stagefright}
+Stagefright is the primary open-source multimedia framework that comes built-in with the Android operating system.\footnote{http://source.android.com/devices/media.html}It includes support for playing a variety of common media file formats.\footnote{http://developer.android.com/guide/appendix/media-formats.html}
 \subsection{Features}
-The Android multimedia framework supports the H.263, H.264 AVC, MPEG-4 SP and VP8 video codecs\footnote{http://developer.android.com/guide/appendix/media-formats.html} in the 3GPP(.3gp), MPEG-4(.mp4), MPEG-TS(.ts), WebM(.webm) and Matroska (.mkv) formats.
+Stagefright comes with built-in software-based codecs for several popular media formats. It also supports integration with hardware-accelerated OpenMax\footnote{http://www.khronos.org/openmax/} codecs. Stagefright also supports session management, time-synchronized rendering, transport control and DRM.
+\subsection{Architecture}
+In the following figure an overview is given on the interaction between apps and the Stagefright framework, along with its external components.\\
+\includegraphics[width=350px]{video_decoding/native.png}
+Apps can utilize the Stagefright framework by using the classes inside the android.media APIs\footnote{http://developer.android.com/reference/android/media/package-summary.html}. These classes communicate with the Stagefright framework by making use of the Binder\footnote{http://developer.android.com/reference/android/os/Binder.html} class which facilitates inter-process communication. As mentioned, Stagefright comes with built-in software codecs, and can be extended with hardware-based OpenMAX(OMX) codecs, called components. An additional shared library, an OpenMax plugin, links these codecs to Stagefright.
+

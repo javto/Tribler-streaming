@@ -1,4 +1,4 @@
-\section{VLC}
+\section{VLC for Android Beta}
 VLC for Android Beta is an open-source multimedia player and framework\footnote{http://www.videolan.org}, that is immensely popular and has been downloaded over 10 million times.\footnote{https://play.google.com/store/apps/details?id=org.videolan.vlc.betav7neon\&hl=nl} It currently is in a BETA phase, meaning that it is not completely finished, lacks features, and can still contain unknown issues. 
 \subsection{Features}
 VLC for Android plays most multimedia files both locally and through a network stream. The current version of VLC for Android has support for devices with an ARMv7 CPU and a x86 CPU.
@@ -10,6 +10,6 @@ On top of libVLCcore, a singleton class libVLC acts as a wrapper class, that giv
 \subsubsection{Modules}
 VLC comes with more than 200 modules including various multiplexers, demultiplexers, decoders and filters. These modules are loaded at runtime depending on the necessity. Given the modular nature of VLC's architecture, unnecessary modules can be taken out in order to reduce the footprint of the framework.
 \subsubsection{Multi-threading}
-VLC is a multi-threaded framework. One of the main reasons for using multi-threading is used to warrent that an audio or video frame will be played at the exact presentation time without blocking the decoder threads.
+VLC is a multi-threaded framework. One of the main reasons for using multi-threading is to warrent that an audio or video frame will be played at the exact presentation time without blocking the decoder threads.
 
 
