@@ -32,6 +32,7 @@
 *.aux
 *.bcf
 *.pdf
+*.tex~
 
 # OS generated files #
 ######################
