@@ -6,17 +6,32 @@ As the previous section hinted, the following problem exists:\\
 This research question consists out of three main elements: VoD, mobile devices and a non-centralized approach. These are the topics of  the following sub questions.
 
 \subsection{Sub questions}
-VoD is the main feature that needs to be considered for implementation, which raises the following question:
+VoD is the main feature that needs to be considered for implementation, some existing applications on mobile and non-mobile devices (desktops for example) might already exist. Research in to this matter is crucial, so no redundant or useless work is done. This raises the following question:
+
 \begin{enumerate}
 	\item\textit{``Which solutions exist for VoD on (non-)mobile devices''}\\
-	\\if no solutions exist for mobile devices, the following questions are of grave importance:\\
+	
+	\\If no solutions exist for mobile devices, maybe there are solutions for non-mobile devices which can be ported to those mobile devices. This led to the following sub question:\\
+
 		\begin{enumerate}
 			\item\textit{``How can a port of an existing non-mobile solution be made to mobile devices?''}\\
-			\\and\\
+			
+			\\Important to realize is, that a port of a solution might not have full functionality because of lacking hardware or other incompatibilities. Therefore research has to be done into the following:\\
+			
 			\item\textit{``What are the limitations of such a ported solution to mobile devices?''}\\
 		\end{enumerate}
-	Furthermore, the problem of centralization needs to be addressed:\\
-	\item\textit{``Which (ported) solutions for VoD use a non-centralized approach?''}\\
-	\\Finally, research has to be conducted into the following:\\
+
+	Interesting to see is which of these solutions, ported or otherwise, use a non-centralized approach. Non-centralization is key to getting a low-cost, highly reliable and community driven solution. The following sub question pertains to this matter: \\
+
+	\item\textit{``Which solutions for VoD use a non-centralized approach?''}\\
+
+	\\There are an abundant number of different mobile devices, ranging from different sizes and processors to platforms. Each different platform, such Apple's iOS, Android and Windows mobile, has its advantages and disadvantages. These pros and cons have to be researched in order to see which platforms are best suitable for which solutions. To conduct research in this topic, the following sub question was deduced:\\
+
 	\item\textit{``Which mobile platforms are best suited to implement VoD in a non-centralized approach?''}\\
+	
+	\\Videos are encoded to save space and bandwidth once transmitted. To decode these videos, decoding software has to be used. Decoding software has to be included or linked to in order to play the video, research into this matter will be led by the following sub question:\\
+
+	\item\textit{``What solutions exist for video decoding on the chosen platform?"}\\
 \end{enumerate}
+
+Research in the solution to sub question one will be conducted in section \ref{sec:vod}. In this same section, the non-centralization aspect as well as how a port can be made to mobile devices are described. The limitations of these ports are also described in this section. The different mobile platforms are elucidated in section \ref{sec:mos}. Video decoding is described in section \ref{sec:videc}. Finally an analysis of the risks involved is included, describing what to do when a situation arises that compromise a solution or part of it.
