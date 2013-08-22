@@ -10,7 +10,7 @@
 
 \pagestyle{fancy}
 \fancyhead[CE, CO] {Agenda Mobile VoD}
-\fancyhead[LE, LO] {August 22nd, 2013}
+\fancyhead[LE, LO] {August 1st, 2013}
 
 Opening
 
@@ -21,7 +21,6 @@ Opening
 \begin{enumerate}
 \item[-] Completed tasks during last sprint.
 \item[-] Encountered impediments
-\item[-] Orientation Report
 \item[-] Requirements Analysis Document
 \item[-] Architectural Design Document
 \item[-] Technical Design Document
