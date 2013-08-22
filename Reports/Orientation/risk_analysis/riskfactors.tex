@@ -1,13 +1,40 @@
 \section{Risk Factors}
-\subsection{Target device incompatibility}
-\subsubsection{VLC}
-Given the fact that VLC for Android is currently still in a Beta phase, there is a propability that the framework will be incompatible with the target device of the project.\\
+\subsection{VLC for Android incompatible with target device}
+Given the fact that VLC for Android is currently still in a Beta phase, there is a chance that the framework will be incompatible with the target device of the project.\\
 \newline
-\textit{Countermeasure:}\\
-The VLC component will be dropped and the native Android multimedia framework (Stagefright) will be used.\\
+\textit{Indications:}
+\begin{itemize}
+	\item[-]Component fails to compile for target device architecture.
+	\item[-]Component fails to install on target device.
+	\item[-]Component fails to run on target device.
+	\item[-]Component crashes unexpectedly during runtime.
+	\\
+\end{itemize}
+\textit{Countermeasure:}
+\newline
+The VLC for Android component will be dropped and the native Android multimedia framework (Stagefright) will be used.\\
+\newline
+\textit{Timing of countermeasure action:}\\
+When the above listed indications appear during initial individual testing of the component on the target device, the countermeasure will take place. Initial testing of this component will be performed at the end of the Orientation phase.\\
+\newline
 \newline
 \textit{Impact:}\\
-The number of supported multimedia codecs in the prototype will be significantly reduced. However, the fewer codecs that are supplied in combination with Stagefright will be hardware accelerated and are guaranteed to work, as these hardware-based codecs are supplied by the hardware vendor. The 'must have' functionalities of the prototype will therefore not be compromised by this solution. 
+As a result of dropping the VLC for Android component, the number of supported multimedia formats in the prototype will be significantly reduced. However, the fewer codecs that are supplied in combination with Stagefright are hardware accelerated and are guaranteed to work, as these hardware-based codecs are supplied by the hardware vendor. The 'must have' functionalities of the prototype will therefore not be compromised by this solution.\\
+\subsection{VLC for Android not working in combination with Tribler components}
+Given the bleeding edge character of the combination of VLC for Android with P2P streaming data, there exists a risk that this video decoding framework will not work with key components of Tribler.\\
+\newline
+\textit{Indications:}
+\begin{itemize}
+	\item[-]Component fails to play video data from Tribler components.
+\end{itemize}
+\textit{Countermeasure:}\\
+The VLC for Android component will be dropped and the native Android multimedia framework (Stagefright) will be used.\\
+\newline
+\textit{Timing of countermeasure action:}\\
+When there is no concrete evidence of a working combination of VLC for Android and the key components of tribler before the end of the first week of the implementation phase.\\
+\newline
+\textit{Impact:}\\
+As a result of dropping the VLC for Android component, the number of supported multimedia formats in the prototype will be significantly reduced. However, the fewer codecs that are supplied in combination with Stagefright are hardware accelerated and are guaranteed to work, as these hardware-based codecs are supplied by the hardware vendor. The 'must have' functionalities of the prototype will therefore not be compromised by this solution.\\ 
 \subsubsection{Python for Android}
 In case Python for Android does not work on the target devices, the Tribler core will not be able to be ported to Android, since this is completely written in Python.\\
 \newline
