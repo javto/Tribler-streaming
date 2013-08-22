@@ -12,18 +12,21 @@ The number of supported multimedia codecs in the prototype will be significantly
 In case Python for Android does not work on the target devices, the Tribler core will not be able to be ported to Android, since this is completely written in Python.\\
 \newline
 \textit{Countermeasure:}\\
-A java-based Android app will be written that will use a seperate Libtorrent.\\
+A java-based Android app will be written that will make seperate use of the Libtorrent library.\\
 \newline
 \textit{Impact:}\\
+Many of the unique Tribler functionalities will not be available, and the prototype application will not be easily extendable towards having Tribler functionalities.
 \subsection{Framerate performance issue}
-There is a chance that the framerate performance of the VLC framework will be unacceptably low.\\
+\subsubsection{VLC}
+Given the fact that VLC for Android is currently still in a Beta phase, the playback performance with some multimedia file formats can be unnacceptable\\
 \newline
 \textit{Countermeasure:}\\
-Test
-\\
+Based on how many file formats are affected by the performance issue, the VLC component will be dropped and the native Android multimedia framework (Stagefright) will be used, or individual modules respondible for decoding will be removed from the framework and will not be supported in the prototype application.\\
 \newline
 \textit{Impact:}\\
-Test
+In the worst case, the number of supported multimedia codecs in the prototype will be significantly reduced. However, the fewer codecs that are supplied in combination with Stagefright will be hardware accelerated and are guaranteed to work, as these hardware-based codecs are supplied by the hardware vendor. The 'must have' functionalities of the prototype will therefore not be compromised by this solution.\\
+\newline
+In the best case, only a few uncommon multimedia file formats will be unsupported in the prototype application, which will hardly affect its video decoding capabilities.
 
 
 
