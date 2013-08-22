@@ -15,9 +15,6 @@
 The prototype must have the following features:
 
 \begin{enumerate}
-\item \emph{\requirement{req:search}{Search for a video};}\\
-The prototype must have a search bar in which the user types the name of the video the user is looking for, then the prototype should show a number of names of videos which closely, if not fully, resemble the searched name.
-
 \item \emph{\requirement{req:play}{Play the selected video};}\\
 When the user has selected a video from the before mentioned list, the user can then press a play button. After pressing the play button, the prototype will play the selected video.
 
@@ -27,15 +24,36 @@ While playing the video, the user can press a pause button which will pause the 
 \item \emph{\requirement{req:seek}{Seek in the video};}\\
 A slider will be at the bottom of the video, with which the user can set the slider to a certain part of the video. The prototype then resumes play at that part of the video.
 
+\item \emph{\requirement{req:libtorrent}{Libtorrent support};}\\
+The prototype will support the Libtorrent transport protocol for its P2P communication.
+
 \subsection{Should have}
+\item \emph{\requirement{req:search}{Search for a video};}\\
+The prototype must have a search bar in which the user types the name of the video the user is looking for, then the prototype should show a number of names of videos which closely, if not fully, resemble the searched name.
+
 \item \emph{\requirement{req:download}{Download the selected video};}\\
 The user can choose to download a video by means of pressing a download button so the user can watch it later instead of watching it immediately.
 
+\item \emph{\requirement{req:download}{Single click installer};}\\
+The prototype application should have a single click installer, meaning that all components and dependencies should be intergrated into one single APK installation package.
+
+\item \emph{\requirement{req:codecs}{Support as many multimedia codecs and file formats as Tribler};}\\
+The prototype application should support as many multimedia codecs and file formats as the desktop version of Tribler.
+
 \subsection{Could have}
+\item \emph{\requirement{req:dispersy}{Dispersy support};}\\
+The prototype application could support Dispersy to spread data bundles over the internet in a fully decentralized way, as to facilitate the creation of 'channels' of bundled torrents.
+
 \item \emph{\requirement{req:channel}{Browse through 'channels' for videos};}\\
 The desktop version of tribler has channels that allows users to browse through a collection of videos, a similar feature could be implemented in the prototype.
 
 \subsection{Would have}
+\item \emph{\requirement{req:libswift}{Libswift support};}\\
+The prototype will support the Libswift transport protocol for its P2P communication.
+
+\item \emph{\requirement{req:anonymous}{Anonymous tunneling/Subset of Tor protocol};}\\
+The prototype will support anonymous tunneling or a subset of the Tor protocol in order to facilitate anonymous data traffic.
+
 \item \emph{\requirement{req:seed}{Seed a video};}\\
 While watching and downloading the video is only leeching, also seeding the already downloaded pieces of the video would increase the availability of pieces in the swarm.
 
