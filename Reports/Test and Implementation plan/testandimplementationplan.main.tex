@@ -1,0 +1,33 @@
+\documentclass[pdftex, 12pt, a4paper]{report}
+
+\newcommand{\HRule}{\rule{\linewidth}{0.5mm}}
+\usepackage{enumerate}
+\usepackage{enumitem}
+\usepackage{graphicx}
+\usepackage[english]{babel}
+\usepackage{fancyhdr}
+\usepackage{supertabular}
+
+\begin{document}
+
+\pagestyle{fancy}
+\fancyhead{}
+\fancyhead[LE, LO] {\today}
+\fancyhead[CE, CO] {Test and Implementationplan}
+\fancyhead[RE, RO] {version 1}
+
+\input{./title.tex}
+
+\pagebreak
+
+\tableofcontents
+
+\pagebreak
+
+\input{./introduction.tex}			%chapter
+\input{./test.tex}				%chapter
+\input{./implementation.tex}		%chapter
+
+\pagebreak
+
+\end{document}
