@@ -1,2 +1,14 @@
-\section{Implementation}
+\chapter{Implementation}
 \label{sec:impl}
+In the Requirements Analysis, the requirements were prioritized according to the MoSCoW method. The priority in there will be a guideline to plan the different stages of implementation. Every sprint, a number of functional requirements will be implemented as functionality to the prototype. For the explanation of the requirements, please see the Requirements Analysis. The following planning is subject to the risks involved and elucidated in the Orientation Phase and could therefore not be the followed planning later on in the project:
+
+\section{Sprint one}
+In Sprint one, the aim will be to let a predetermined video play on Android via VLC, satisfying the requirement of playing a video. When this works the requirements of pausing and seeking in a video are also satisfied because they depend on VLC. Acceptance testing will be used to test if this is indeed the case.
+\section{Sprint two}
+In this sprint the goal will be to incorporate the Tribler core in to the mix. Making the python-based program work on Android will be the challenge here. The Tribler core, which includes Libtorrent, should be capable of downloading a video on Android and together with the work done in sprint one, the prototype should now be able to download a predetermined video and let it play on VLC. Testing will be done afterwards to check if the prototype meets the currently set requirements.
+\section{Sprint three}
+When the download algorithm is adapted for streaming, the prototype can stream the video directly to VLC instead of first downloading it. The prototype should have all the `must have' requirements now, to test this acceptance testing is used.
+\section{Sprint four}
+Tribler has a search function which searches for videos to download in a non-centralized way. In this sprint the team will attempt to incorporate the search function so users can search for a video, click play and then the video will be streamed to their device. Again, acceptance testing will be used before the next sprint to check if the prototype is still in a fully working state.
+\section{Sprint five}
+The last sprint will be to incorporate the requirement to optionally download a video. A single click installer will also be provided to incorporate VLC and Tribler into one single .apk file (the install file format for Android). After this the prototype will be subjected to acceptance testing to check if everything works as intended.
