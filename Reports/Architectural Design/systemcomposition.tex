@@ -4,31 +4,38 @@ In this section, the different subsystems are elucidated, followed by how they a
 \begin{itemize}
 \item \textbf{VLC}
 	\begin{itemize}
-		\item LibVLC
-		\item LibVLCcore
-		\item VLC modules
-		\item Buffer
-		\item VLC media player
+		\item LibVLCcore\\
+This core manages the threads, loading/unloading modules (codecs, multiplexers, demultiplexers, etc.) and all low-level control in VLC.
+		\item LibVLC\\
+On top of libVLCcore, a singleton class libVLC acts as a wrapper class, that gives external applications access to all features of the core.
+		\item VLC modules\\
+VLC comes with more than 200 modules including various decoders and filters for video and audio playback. These modules are loaded at runtime depending on the necessity. The modules communicate with the hardware directly without using the previously described LibVLC wrapper class.
+		\item Buffer\\
+A buffer helps to ensure smooth playback, it pulls media data from the storage in the buffer to ready it for the VLC media player.
+		\item VLC media player\\
+The media player from VLC will be the Graphical User Interface(GUI) when the user is watching a video. The GUI will be explained more in depth in the GUI subsystem.
 	\end{itemize}
 \item \textbf{Tribler}
 	\begin{itemize}
-		\item Core
-		\item Video Player control
-		\item Libtorrent
+		\item Core\\
+		\item Libtorrent\\
+Libtorrent is a C++ implementation of the BitTorrent protocol, which Tribler uses to download the different pieces of a requested file. For Video-on-Demand(VoD) it will do this according to a download algorithm described by Petrocco et al\cite{libswift12}. The download algorithm discerns three priority tiers: high-, middle- and low-priority. The high priority section starts from the current playback position. First it downloads the pieces in this section in-order so that the user experiences continues playback. If no pieces can be downloaded from the high priority section, it will download the pieces in the mid priority section in a rarity first fashion to increase the availability of pieces in the swarm. If the middle priority pieces are also exhausted, it will download the low priority pieces in the same fashion. 
+		\item Video Player Control\\
+An important thing for Libtorrent is the current playback position because Libtorrent needs to get the right pieces for playback. The current playback position will be monitored by the Video Player Control.
 	\end{itemize}
 \item \textbf{GUI}
 	\begin{itemize}
-		\item start 
-		\item VLC media player
+		\item Start\\
+The GUI which is shown when the prototype is started, will show a start button. What happens when this button is pressed is further explained in the section \ref{sec:comp}, about the composition of the different subsystems.
+		\item VLC media player\\
+The media player which comes with VLC for Android Beta has all the functionality we need and functions as the GUI when the user is watching a video. The user can use gesture controls to seek in the video, pause and then resume it, adjust the volume.
 	\end{itemize}
 \end{itemize}
 \subsection{Composition}
+\label{sec:comp}
 In figure \ref{fig:prop_arch} a visual overview of the proposed architecture can be found. In this figure, the different subsystem are combined in to one system.
-\pagebreak
-\pagebreak
 \begin{figure}[h]
 	\includegraphics[scale=0.47]{images/architecture_overview.pdf}
 	\caption{The proposed architecture of the prototype}
 	\label{fig:prop_arch}
 \end{figure}
-\pagebreak
