@@ -5,6 +5,7 @@
 \usepackage{graphicx}
 \usepackage[english]{babel}
 \usepackage{fancyhdr}
+\usepackage{pdfpages}
 
 \begin{document}
 
@@ -21,9 +22,8 @@
 
 \pagebreak
 
-\input{./proposedarchitecture.tex}		%chapter
-\input{./introduction.tex}					%section
-\input{./subsystemdecomposition.tex}			%section
+\input{./proposedarchitecture.tex}		%chapter + intro
+\input{./systemcomposition.tex}			%section
 \input{./persistentdatamanagement.tex}		%section
 \input{./concurrency.tex}					%section
 \input{./softwarecontrol.tex}				%section
