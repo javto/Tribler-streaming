@@ -1,7 +1,6 @@
 \section{System composition}
 In this section, the different subsystems are elucidated, followed by how they are combined together to form the proposed architecture of the prototype.
 \subsection{Subsystems}
-In this sub
 \begin{itemize}
 \item \textbf{VLC}
 	\begin{itemize}
@@ -11,8 +10,8 @@ This core manages the threads, loading/unloading modules (codecs, multiplexers, 
 On top of libVLCcore, a singleton class libVLC acts as a wrapper class, that gives external applications access to all features of the core.
 		\item VLC modules\\
 VLC comes with more than 200 modules including various decoders and filters for video and audio playback. These modules are loaded at runtime depending on the necessity. The modules communicate with the hardware directly without using the previously described LibVLC wrapper class.
-		\item Buffer\\
-A buffer helps to ensure smooth playback, it pulls media data from the storage in the buffer to ready it for the VLC media player.
+		\item Buffer Control\\
+A buffer helps to ensure smooth playback, it puts media data from the storage in to the buffer to ready it for the VLC media player.
 		\item VLC media player\\
 The media player from VLC will be the Graphical User Interface(GUI) when the user is watching a video. The GUI will be explained more in depth in the GUI subsystem.
 	\end{itemize}
@@ -34,11 +33,9 @@ The media player which comes with VLC for Android Beta has all the functionality
 \end{itemize}
 \subsection{Composition}
 \label{sec:comp}
-In figure \ref{fig:prop_arch} a visual overview of the proposed architecture can be found. In this figure, the different subsystem are combined in to one system.
-\begin{figure}[h]
-	\includegraphics[scale=0.47]{images/architecture_overview.pdf}
+\begin{figure}[h!]
+	\includegraphics[scale=0.47]{images/architecture_overview.png}
 	\caption{The proposed architecture of the prototype}
 	\label{fig:prop_arch}
 \end{figure}
-
-%explain achitecture
+In figure \ref{fig:prop_arch} a visual overview of the proposed architecture can be found. In this figure, the different subsystem are combined in to one system. At the top sits the user which issues the command to the GUI to start the process of streaming a video. It will then switch to another GUI, which VLC provides, for media playback (Media Player GUI). The user can play and pause the video as well as seek in the video with this GUI. After the user issues the command to start playback, the Tribler subsystem will download pieces from the video with the Libtorrent protocol. It will store those pieces so that the VLC subsystem can show them to the user when there are enough pieces for continues playback. VLC does this by filling a buffer and letting the player use that for continues playback. The Media Player lets the Video Player Control know what the playback position is so that Libtorrent can download the proper pieces for playback as explained in the subsystems section. The Android Hardware Control subsystem is added to clarify that the interaction with hardware is mostly handled by the Android platform.
