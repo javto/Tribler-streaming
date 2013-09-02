@@ -1,7 +1,0 @@
-check readme for building python-for-android here:
-https://github.com/kivy/python-for-android
-
-also note you can do: export ANDROID_SDK=$ANDROIDSDK
-
-also:
-http://python-for-android.readthedocs.org/en/latest/toolchain/#how-does-it-work
