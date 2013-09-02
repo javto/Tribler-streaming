@@ -1,3 +1,4 @@
 \section{Concurrency}
 \label{sec:conc}
+In order to avoid blocking any processes, all major I/O will run in seperate threads. All network related transactions will run in a seperate network thread (upload/download of pieces). The videodecoding will be performed in several parallel threads that can each run on a seperate CPU core. Finally, the GUI of the prototype application will also run in its own thread. It should be noted that there will not be any complex logic or potentially blocking (synchronous) calls performed in the GUI, as this could compromise the reponsivity of the GUI, as well as the overall user experience.
 %are there concurrent processes(threads) in the system, how are these problems solved/avoided?

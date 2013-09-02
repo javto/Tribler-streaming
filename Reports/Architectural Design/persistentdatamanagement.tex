@@ -4,6 +4,8 @@
 The prototype application will have to be able to stream high definition videos that in case of Blu-ray video, can have a bitrate of up to 40 Mbit/s.\footnote{http://www.blu-raydisc.com/Assets/Downloadablefile/BD-ROM-AV-WhitePaper_100604\%281\%29-15916-18123.pdf}. In case a video is encoded in DivX Plus HD 1080p format, it can have a maximum bitrate of 20 Mbit/s.\footnote{http://www.divx.com/files/DivX_Plus_HD_Brochure.pdf} In order to decode video streams with such bitrates in real-time, data will have to be downloaded into RAM, after which it can directly decoded. The contiguous pieces that are downloaded from the peers will therefore be stored in a buffer that resides in RAM. At the same time, the piece can also be stored to non-volatile storage such as onboard Flash Memory, or to an external SD-card, in order to share the piece with other peers later in time.
 \subsection{Peer Data}
 The peer data, such as peer IP addresses and the relationships between these addresses and available files and pieces, will be stored in a Distributed Hash Table that will reside in the RAM. Having this hashtable reside in main memory allows for fast execution of queries, insertions and deletions.
+\subsection{Application Preferences}
+Preferences that can be set by the user of the prototype application will be stored persistantly on the internal storage of the target device. These preferences will be private to the application and will persis across user sessions.
 
 
 
