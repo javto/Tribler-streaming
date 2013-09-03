@@ -43,12 +43,3 @@
 .Trashes
 ehthumbs.db
 Thumbs.db
-*.pyc
-*.pyo
-*~
-\#*\#
-/.Tribler
-/.noseids
-/output
-/swift
-/swift.exe
