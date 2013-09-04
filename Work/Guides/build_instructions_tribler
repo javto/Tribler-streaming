@@ -1,0 +1,20 @@
+clone the tribler repository:
+git clone --recursive https://github.com/Tribler/tribler
+
+download the necessary tools:
+sudo apt-get install scons build-essential libevent-dev python-libtorrent python-apsw python-wxgtk2.8 python-netifaces python-m2crypto vlc
+
+update the submodules swiftengine and dispersy:
+git submodule init
+git submodule update
+
+build swift
+cd  tribler/Tribler/SwiftEngine
+scons 
+cp swift ../..
+
+go back to main tribler folder
+cd ../..
+
+build tribler:
+./tribler.sh

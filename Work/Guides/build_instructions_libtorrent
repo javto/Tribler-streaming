@@ -1,0 +1,19 @@
+Download libtorrent from:
+https://code.google.com/p/libtorrent/downloads/list 
+
+extract libtorrent werever you like, for example in /home/user/libtorrent/
+
+install boost:
+sudo apt-get install libboost-all-dev
+
+go to libtorrent folder:
+cd /home/user/libtorrent/
+
+run config:
+./configure
+
+build libtorrent:
+make
+
+optional: run tests:
+make check
