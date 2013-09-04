@@ -10,7 +10,7 @@ go to libtorrent folder:
 cd /home/user/libtorrent/
 
 run config:
-./configure
+./configure --disable-debug
 
 build libtorrent:
 make
