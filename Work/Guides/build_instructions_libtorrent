@@ -17,3 +17,16 @@ make
 
 optional: run tests:
 make check
+
+
+--------------------------
+adapt user-config.jam
+set paths to arm-linux-androideabi-ar and arm-linux-androideabi-g++ correct (in both: "using gcc : androidR8e" and "using gcc : androidR8b") by referring to the Android NDK root as so:
+$(AndroidNDKRoot)/toolchains/arm-linux-androideabi-4.6/prebuilt/linux-x86/bin/arm-linux-androideabi-g++
+$(AndroidNDKRoot)/toolchains/arm-linux-androideabi-4.6/prebuilt/linux-x86/bin/arm-linux-androideabi-ar
+
+
+for building libtorrent to android:
+
+sudo b2 --user-config=/home/jaap/git/Boost-for-Android/boost_1_53_0/tools/build/v2/user-config.jam toolset=gcc-androidR8e boost=source link=static runtime-link=static target-os=linux --stagedir=android release
+
