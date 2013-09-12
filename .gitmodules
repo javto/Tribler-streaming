@@ -1,0 +1,3 @@
+[submodule "Work/VLC"]
+	path = Work/VLC
+	url = git://git.videolan.org/vlc-ports/android.git
