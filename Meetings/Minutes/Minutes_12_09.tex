@@ -1,0 +1,50 @@
+\documentclass[pdftex, 12pt, a4paper]{report}
+
+\newcommand{\HRule}{\rule{\linewidth}{0.5mm}}
+\usepackage{enumerate}
+\usepackage{graphicx}
+\usepackage[english]{babel}
+\usepackage{fancyhdr}
+
+\begin{document}
+
+\pagestyle{fancy}
+\fancyhead[CE, CO] {Minutes Mobile VoD}
+\fancyhead[LE, LO] {September 12th, 2013}
+
+The meeting was opened at 10.03.\\
+
+\begin{enumerate}
+\item Review agenda\\	
+The agenda is accepted.
+\item Review of prior minutes\\
+Prior minutes are accepted.
+\item Sprint planning\\
+\begin{enumerate}
+\item[-] Completed tasks during last sprint.\\
+	\begin{itemize}
+	\item Boost\\
+Boost is compiled for Android, this library is needed for libtorrent.
+Thanks to Egbert, the Team can now compile libtorrent as well, through a russian tracker application for android.
+	\end{itemize}
+\item[-] Encountered impediments\\
+	\begin{itemize}
+	\item SIG\\
+There is no code to hand in to SIG, so this wasn't done and the Supervisor ensured the Team that this was no issue.
+	\item Boost \& libtorrent
+The team said that they took a long time finding out how to build boost and libtorrent so a quite some time was lost here. The Supervisor and Client understood this and as example they said that a professor took a full-time week to build libtorrent for Mac.
+	\end{itemize}
+\item[-] Libtorrent\\
+The Team will now implement libtorrent in their own project to make it simple, fast and responsive. They will use it to download a torrent file and then let it play through a seperately compiled VLC for now.
+\item[-] Streaming\\
+After making an app that downloads a torrent through the libtorrent wrapper, the Team will implement the streaming function. To get a video to stream, The Client said that Egbert wrote a wrapper class that does this on a desktop environment for python code. The Team will look at this wrapper to see how it is done and how they can achieve this for android.
+\end{enumerate}
+\item Other issues\\
+No other issues were reported.
+\end{enumerate}
+
+There were no questions.\\
+
+The meeting was closed at 10.25.\\
+
+\end{document}
