@@ -22,8 +22,6 @@ public class TorrentProgressActivity extends Activity {
 
 	private final static String KEY_FILENAME = "key_filename";
 
-	// private TorrentContainer mTorrentContainer = null;
-
 	private TextView tStatus;
 	private TextView tName;
 	private TextView tSavePath;
@@ -124,17 +122,18 @@ public class TorrentProgressActivity extends Activity {
 			long totalSize = libTorrent().GetTorrentSize(getTorrentFileName());
 			long progressSize = libTorrent()
 					.GetTorrentProgressSize(contentName);
-			// long progress = libTorrent().GetTorrentProgress(contentName);
 
 			tStatus.setText(status);
-
-			String progressText = TorrentState.values()[state].getName();
-			if (progressSize > 0) {
-				progressText += " <> "
-						+ /* "(" + progress + ") " + */progressSize + " MB / "
-						+ totalSize + " MB";
+			String progressText;
+			if (state != -1) {
+				progressText = TorrentState.values()[state].getName();
+				if (progressSize > 0) {
+					progressText += " <> " + progressSize + " MB / "
+							+ totalSize + " MB";
+				}
+			} else {
+				progressText = "please wait";
 			}
-
 			tProgress.setText(progressText);
 			tProgressBar.setIndeterminate(false);
 			tProgressBar.setMax((int) totalSize);
@@ -143,7 +142,7 @@ public class TorrentProgressActivity extends Activity {
 			if (state == TorrentState.SEEDING.ordinal() && !opened) {
 				opened = true;
 				String files = libTorrent().GetTorrentFiles(contentName);
-				Log.e(DEBUG_TAG, "SHOULD OPEN!!!");
+				Log.e(DEBUG_TAG, "SHOULD OPEN!!!" + contentName);
 				openFiles(files.split("\\r?\\n"), contentName);
 			}
 		}
@@ -172,19 +171,43 @@ public class TorrentProgressActivity extends Activity {
 				intent.setDataAndType(Uri.fromFile(file), type);
 				startActivity(intent);
 			} else {
+				File movie = getLargestFile(contentFile);
 				// Open download directory
 				Intent intent = new Intent();
 				intent.setAction(android.content.Intent.ACTION_VIEW);
-				File file = new File(getSavePath(), contentFile);
-				Log.d(DEBUG_TAG, "path: " + file.getAbsolutePath());
-				intent.setData(Uri.fromFile(file));
+				Log.d(DEBUG_TAG, "path: " + movie.getAbsolutePath());
+				intent.setDataAndType(Uri.fromFile(movie), "video/*");
 				startActivity(intent);
 			}
 		} catch (Exception e) {
 			Log.e(DEBUG_TAG, e.getLocalizedMessage());
 		}
 	}
-
+	/*99% of the time, largest file is the video you want to play:
+	 * TODO subfolder support, folder.length()=0, so it won't go in to the folder
+	 */
+	private File getLargestFile(String contentFile) {
+		
+		File parentDir = new File("" + getSavePath() + "/" + contentFile);
+		File[] dirFiles = null;
+		if (parentDir.isDirectory()) {
+			dirFiles = new File(parentDir.toString()).listFiles();
+			int winner = -1;
+			for (int i = 0; i < dirFiles.length; i++) {
+				if(winner != -1) {
+					if (dirFiles[i].length() > dirFiles[winner].length()) {
+						winner = i;
+					}
+				} else {
+					winner = i;
+				}
+			}
+			return dirFiles[winner];
+		} else {
+			//TODO error: parentDir is not a dir
+			return null;
+		}
+	}
 	@Override
 	protected void onDestroy() {
 		super.onDestroy();

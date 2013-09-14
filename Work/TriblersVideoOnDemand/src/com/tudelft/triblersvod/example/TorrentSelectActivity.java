@@ -1,5 +1,7 @@
 package com.tudelft.triblersvod.example;
 
+import java.io.File;
+
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
@@ -30,13 +32,16 @@ public class TorrentSelectActivity extends Activity {
 		super.onActivityResult(requestCode, resultCode, data);
 		if (resultCode == Activity.RESULT_OK && requestCode == TORRENT_REQ_CODE) {
 			String fileName = data.getDataString().replaceFirst("file://", "");
+			
+			//File file = new File(fileName);
+			//file.renameTo(file.)
 			Log.d(DEBUG_TAG, "Got file: " + fileName);
 			if (fileName.endsWith(".torrent"))
 				startActivity(TorrentProgressActivity.getStartIntent(this,
 						fileName));
 			else
 				Toast.makeText(this,
-						"Fout: bestandsnaam eindigde niet op '.torrent'",
+						"Error, filename did not end with '.torrent'",
 						Toast.LENGTH_LONG).show();
 		}
 	}

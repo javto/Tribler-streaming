@@ -24,15 +24,17 @@ public final class R {
         public static final int ic_launcher=0x7f020000;
     }
     public static final class id {
-        public static final int action_settings=0x7f080008;
-        public static final int torrentprogress_contentname=0x7f080003;
-        public static final int torrentprogress_name=0x7f080001;
-        public static final int torrentprogress_progress=0x7f080005;
-        public static final int torrentprogress_progressbar=0x7f080006;
-        public static final int torrentprogress_savepath=0x7f080002;
-        public static final int torrentprogress_status=0x7f080004;
-        public static final int torrentprogress_statusbox=0x7f080000;
-        public static final int torrentselect_btn=0x7f080007;
+        public static final int action_settings=0x7f08000a;
+        public static final int torrentprogress_contentname=0x7f080005;
+        public static final int torrentprogress_name=0x7f080003;
+        public static final int torrentprogress_namesbox=0x7f080001;
+        public static final int torrentprogress_progress=0x7f080007;
+        public static final int torrentprogress_progressbar=0x7f080008;
+        public static final int torrentprogress_savepath=0x7f080004;
+        public static final int torrentprogress_status=0x7f080006;
+        public static final int torrentprogress_statusbox=0x7f080002;
+        public static final int torrentprogress_updatetopbox=0x7f080000;
+        public static final int torrentselect_btn=0x7f080009;
     }
     public static final class layout {
         public static final int activity_torrentprogress=0x7f030000;
