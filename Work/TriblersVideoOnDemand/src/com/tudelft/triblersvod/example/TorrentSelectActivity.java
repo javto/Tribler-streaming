@@ -39,10 +39,11 @@ public class TorrentSelectActivity extends Activity {
 			File f = new File(data.getDataString());
 			String fileName = Html.fromHtml(f.getAbsolutePath()).toString();
 			f.renameTo(new File(fileName));
+			fileName = f.getAbsolutePath();
 
 			// File file = new File(fileName);
 			// file.renameTo(file.)
-			Log.d(DEBUG_TAG, "Got file: " + f.getAbsolutePath());
+			Log.d(DEBUG_TAG, "Got file: " + fileName);
 			if (fileName.endsWith(".torrent"))
 				startActivity(TorrentProgressActivity.getStartIntent(this,
 						fileName));
