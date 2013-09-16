@@ -10,30 +10,34 @@ sudo gedit /etc/environment
 add ANDROID_SDK=/home/user/android/android-sdk-linux
 add ANDROID_NDK/home/user/android/android-ndk-r9
 add ANDROID_ABI=armeabi-v7a
+?->armeabi<-?
 
 PATH add:
-/home/user/android/android-sdk-linux/platform-tools:/home/user/android/android-
-sdk-linux/tools
+/home/user/android/android-sdk-linux/platform-tools:/home/user/android/android-sdk-linux/tools
 INSTALL THE FOLLOWING TOOLS: apache-ant (or ant), autoconf, automake, autopoint,
 cmake, gawk (or nawk), gcc, g++, ia32-libs, build-essentials, libtool, m4, patch, pkg-config, ragel, subversion, and very up-to-date versions of those tools.
 
 on the command line:
-sudo apt-get install ant autoconf automake autopoint cmake gawk gcc g++ ia32-libs build-essentials libtool m4 patch pkg-config ragel subversion
+sudo apt-get install ant autoconf automake autopoint cmake gawk gcc g++ ia32-libs build-essential libtool m4 patch pkg-config ragel subversion
 
 GET THE SOURCE CODE:
-git clone git://git.videolan.org/vlc-ports/android.git
+git clone git://git.videolan.org/vlc-ports/android.git VLC
+
 COMPILING PROCESS
+0.Go in to the folder VLC
 1.gedit /compile.sh
 2.Edit the mcpu flags for the appropriate target CPU (cortex-a15 for Nexus 10)
 3.gedit /vlc-android/jni/Application.mk
 4.Modify content into NDK_TOOLCHAIN_VERSION=4.8
 3.sh compile.sh
-4.When the compiling stops, run the following command: find ~/vlcsourcefolder/ -name
+
+COMPILING TROUBLESHOOT
+1.If the compiling stops unsuccesfully, run the following command: find ~/vlcsourcefolder/ -name
 “udiv.asm”
-5.Edit each file from the search results, and remove the spaces between the [ ] brackets, if any.
-AFFECTED FILES:
+2.Edit each file from the search results, and remove the spaces between the [ ] brackets, if any.
 /home/user/git/android/vlc/contrib/android/gmp/mpn/udiv.asm
-6.sh compile.sh (start the compilation again, it will now succesfully continue and finish)
+3.sh compile.sh (start the compilation again, it will now succesfully continue and finish)
+
 COMPILING IS DONE!!
 TARGET DEVICE INSTALLATION INSTRUCTIONS:
 1.cd /vlc-android/bin/ folder
