@@ -32,12 +32,17 @@ public class TorrentSelectActivity extends Activity {
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 		super.onActivityResult(requestCode, resultCode, data);
 		if (resultCode == Activity.RESULT_OK && requestCode == TORRENT_REQ_CODE) {
-			String fileName = data.getDataString().replaceFirst("file://", "");
-			fileName = Html.fromHtml(fileName).toString();
+			// String fileName = data.getDataString().replaceFirst("file://",
+			// "");
+			// fileName = fileName).toString();
+
+			File f = new File(data.getDataString());
+			String fileName = Html.fromHtml(f.getAbsolutePath()).toString();
+			f.renameTo(new File(fileName));
 
 			// File file = new File(fileName);
 			// file.renameTo(file.)
-			Log.d(DEBUG_TAG, "Got file: " + fileName);
+			Log.d(DEBUG_TAG, "Got file: " + f.getAbsolutePath());
 			if (fileName.endsWith(".torrent"))
 				startActivity(TorrentProgressActivity.getStartIntent(this,
 						fileName));
