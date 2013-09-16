@@ -5,6 +5,7 @@ import java.io.File;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.Html;
 import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
@@ -32,9 +33,10 @@ public class TorrentSelectActivity extends Activity {
 		super.onActivityResult(requestCode, resultCode, data);
 		if (resultCode == Activity.RESULT_OK && requestCode == TORRENT_REQ_CODE) {
 			String fileName = data.getDataString().replaceFirst("file://", "");
-			
-			//File file = new File(fileName);
-			//file.renameTo(file.)
+			fileName = Html.fromHtml(fileName).toString();
+
+			// File file = new File(fileName);
+			// file.renameTo(file.)
 			Log.d(DEBUG_TAG, "Got file: " + fileName);
 			if (fileName.endsWith(".torrent"))
 				startActivity(TorrentProgressActivity.getStartIntent(this,
