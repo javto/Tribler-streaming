@@ -12,27 +12,33 @@
 \fancyhead[CE, CO] {Minutes Mobile VoD}
 \fancyhead[LE, LO] {September 17th, 2013}
 
-Opening
+The meeting was opened at 15.00.
 
 \begin{enumerate}
-\item Review agenda			
-\item Review of prior minutes
-\item Sprint planning
+\item Review agenda\\
+The agenda is accepted.
+\item Review of prior minutes \\
+The prior minutes are accepted.
+\item Sprint planning\\
 \begin{enumerate}
-\item[-] Completed tasks during last sprint.
+\item[-] Completed tasks during last sprint.\\
 	\begin{itemize}
-	\item VLC and Tribler in one apk
-	\item libtorrent
+	\item VLC and Tribler's VOD in one apk\\
+	The Team reported that the VOD application and VLC are now in one package so users don't have to install extra media playback software.
+	\item Libtorrent\\
+	The Team reported that they have Libtorrent working including the boost libraries thanks to a tip from Egbert to look how RuTracker did it.
+	\item Libtorrent sequential\\
+	For video streaming it is wise to download the pieces in sequential mode, the team reported that they implemented this feature. 
 	\end{itemize}
-\item[-] Encountered impediments
-\item[-] Libtorrent sequential
-\item[-] streaming
+\item[-] Encountered impediments\\
+none reported
+\item[-] streaming\\
+The Team will now work on implementing the streaming functionality. They will extend the video player class to implement buffering through information received from the Libtorrent library. 
 \end{enumerate}
-\item Other issues
+\item Other issues\\
+There were no other issues.
 \end{enumerate}
-
-Questions\\
-
-Close meeting
-
+There were no other questions.\\
+\\
+The meeting was closed at 15.10.
 \end{document}
