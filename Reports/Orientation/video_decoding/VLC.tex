@@ -1,5 +1,5 @@
 \section{VLC for Android Beta}
-VLC for Android Beta is an open-source multimedia player and framework\footnote{http://www.videolan.org}, with over 10.000.000 downloads, it is immensely popular\footnote{https://play.google.com/store/apps/details?id=org.videolan.vlc.betav7neon}. VLC for Android Beta is a ported version of VLC media player for desktop environments. It currently is in a beta phase, meaning that it is not completely finished, lacks features, and can still contain unknown issues.
+VLC for Android Beta is a popular open-source multimedia player and framework\footnote{http://www.videolan.org}, with over 10.000.000 downloads. popular\footnote{https://play.google.com/store/apps/details?id=org.videolan.vlc.betav7neon}. VLC for Android Beta is a ported version of VLC media player for desktop environments. It currently is in a beta phase.
 \subsection{Features}
 VLC for Android can decode many multimedia file formats\footnote{http://www.videolan.org/vlc/features.html}, using a large number of free decoding libraries, including FFmpeg\footnote{http://www.ffmpeg.org/}. The current version of VLC for Android has support for devices with ARMv6\footnote{http://www.arm.com/products/processors/instruction-set-architectures/index.php}, ARMv7, ARMv7+NEON\footnote{http://www.arm.com/products/processors/technologies/neon.php} and x86 CPU architectures and is written almost entirely in C++. Additional multi-core decoding is supported for Cortex A7\footnote{http://www.arm.com/products/processors/cortex-a/cortex-a7.php}, A9\footnote{http://www.arm.com/products/processors/cortex-a/cortex-a9.php} and A15\footnote{http://www.arm.com/products/processors/cortex-a/cortex-a15.php} processor based devices. Other key features of VLC for Android are automatic screen rotation and touch gesture control.
 \subsection{Architecture}
@@ -16,6 +16,7 @@ Ample documentation is available that covers both the core as well as the module
 \subsection{Updates}
 The VLC for Android application is backed up by a non-profit organization called VideoLAN\footnote{http://www.videolan.org/videolan/} and at the time of writing this report, the source code is updated on almost a daily basis.\footnote{http://git.videolan.org/?p=vlc-ports/android.git;a=summary}
 \subsection{Performance}
-The current version of VLC for Android features very smooth HD playback, and no frame lag has been detected. The automatic screen rotation is also very fast and smooth. Touch gesture control also feels responsive and looks smooth. 
+\label{sec:VLC_performance}
+A small performance test of VLC is done by playing two videos encoded in h.264, one with a resolution of 720p, and the other with 1080p. These are popular video formats used in encoding videos. This test is done on the Google Nexus 10" tablet device, which has VLC installed from the Google Play Store. The result is that VLC for Android features smooth HD playback, and no frame lag has been detected. The automatic screen rotation is also fast and smooth. Touch gesture control also feels responsive and looks smooth. 
 
 
