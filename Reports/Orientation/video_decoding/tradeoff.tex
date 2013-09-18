@@ -10,6 +10,12 @@ In this section a trade-off will be made between the previously listed video dec
 	\item[-]Number of users.
 \end{itemize}
 In Table \ref{tab:vid_dec_table} an overview of the trade-off is given which shows how each of the frameworks scored against each of the listed criteria.\\
+It should be noted that the supported file formats are overlapping. This means that Dolphin Player includes support for the all the file formats that are supported in Stagefright, plus an additional set of 15 file formats. VLC for Android supports all the file formats supported by the other frameworks, plus an additional set of 167 file formats.\\
+
+\section{Conclusion}
+Based on the findings in this section, VLC is selected as the multimedia framework for the prototype.
+
+\begin{savenotes}
 \begin{table}[h]
 \caption{Trade off between three video decoding platforms for Android \label{tab:vid_dec_table}}
 	\begin{tabularx}{\textwidth}{| X|X|X|X |}
@@ -42,14 +48,10 @@ In Table \ref{tab:vid_dec_table} an overview of the trade-off is given which sho
 	Number of Users
 	& More than 10.000.000\footnote{\label{install}based on number of installs in the Google Play Store}
 	& More than 900.000.000\footnote{\url{http://www.forbes.com/sites/roberthof/2013/07/18/live-google-q2-earnings-fall-short-shares-down}}
-	& More than 100.000\footnotemark{[\ref{install}]} \\ \hline
+	& More than 100.000\footnote{via footnote \ref{install}} \\ \hline
 	\end{tabularx}
 \end{table}
-It should be noted that the supported file formats are overlapping. This means that Dolphin Player includes support for the all the file formats that are supported in Stagefright, plus an additional set of 15 file formats. VLC for Android supports all the file formats supported by the other frameworks, plus an additional set of 167 file formats.\\
-
-\section{Conclusion}
-Based on the findings in this section, VLC is selected as the multimedia framework for the prototype.
-
+\end{savenotes}
 
 
 

@@ -1,13 +1,14 @@
 \documentclass[pdftex, 10pt, a4paper]{report}
 
 \newcommand{\HRule}{\rule{\linewidth}{0.5mm}}
-\usepackage[style=numeric-comp]{biblatex}
 \usepackage[toc,page]{appendix}
 \bibliography{planofaction.main.bib}
 \usepackage{enumerate}
 \usepackage{graphicx}
 \usepackage[english]{babel}
 \usepackage{fancyhdr}
+\usepackage{url}
+\urlstyle{same}
 
 \begin{document}
 
@@ -21,17 +22,27 @@
 
 \tableofcontents
 
-\pagebreak
-\input{./preface.tex}						%preface
-\pagebreak
-\input{./abstract.tex}						%summary
-
 \input{Introduction/introduction.tex}				%chapter
-\input{ProjectAssignment/projectassignment.tex}		%chapter
+\input{ProjectAssignment/projectassignment.tex}	%chapter
 \input{Approach/approach.tex}					%chapter
 \input{ProjectDesign/projectdesign.tex}			%chapter
-\input{QA/qa.tex}							%chapter
+\input{QA/qa.tex}								%chapter
 
+\begin{thebibliography}{9}
+
+\bibitem{internet_study}
+  Hendrik Schulze, Klaus Mochalski,
+  \emph{Internet Study 2008/2009},
+  Ipoque, Germany,
+  2009.
+
+\bibitem{moscow}
+	Dai Clegg, Richard Barker,  
+	\emph{Case Method Fast-Track: A RAD Approach}
+	Addison-Wesley,
+	2004.
+
+\end{thebibliography}
 \begin{appendices}
 \input{Appendices/appendices.tex}				%chapter
 \end{appendices}
