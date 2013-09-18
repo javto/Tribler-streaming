@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <!-- Main VLC Interface -->
+    <string name="filebrowser_title">إختر الوسائط للتشغيل</string>
+    <string name="sortby">الترتيب بواسطة…</string>
+    <string name="sortby_name">الإسم</string>
+    <string name="sortby_length">الطول</string>
+    <string name="searchable_hint">البحث…</string>
+    <string name="history">المحفوظات</string>
+    <string name="play">تشغيل</string>
+    <string name="play_as_audio">تشغيل كأصوت</string>
+    <string name="play_as_video">تشغيل كأفيديو</string>
+    <string name="append">إلحاق</string>
+    <string name="play_all">تشغيل الكل</string>
+    <string name="append_all">إلحاق الكل</string>
+    <string name="delete">حذف</string>
+    <string name="info">المعلومات</string>
+    <string name="confirm_delete">حذف هذا الملف؟</string>
+    <string name="pause">إيقاف</string>
+    <string name="not_show_again">"لاتظهر هذه الرساله مرة اخرى"</string>
+    <string name="beta_warning">هذه نسخة بيتا\n\nهذه النسخه غير مستقره\n\nلاتستخدم,الا اذا كنت تعرف ماتقوم به\n\nفقد تقتل قطتك,تدمر منزلك وبداية نهاية العالم \nتستخدمها على مسؤليتك الخاصه\n\nممتع :)</string>
+    <string name="info_title">VLC التجريبي</string>
+    <string name="unknown_artist">فنان غير معروف</string>
+    <string name="unknown_album">البوم غير معروف</string>
+    <string name="unknown_genre">النوع غير معروف</string>
+    <string name="songs">الاغاني</string>
+
+    <plurals name="songs_quantity">
+        <item quantity="one">اغنيه واحده</item>
+        <item quantity="other">%d الاغاني</item>
+    </plurals>
+
+    <string name="artists">الفنانين</string>
+    <string name="albums">الالبومات</string>
+
+    <plurals name="albums_quantity">
+        <item quantity="one">البوم واحد</item>
+        <item quantity="other">%d الالبومات</item>
+    </plurals>
+    <plurals name="subfolders_quantity">
+        <item quantity="one">مجلد فرعي واحد</item>
+        <item quantity="other">%d المجلدات الفرعيه</item>
+    </plurals>
+
+    <string name="parent_folder">الوصول للمجلد الاصل</string>
+    <string name="all_albums">كل الالبومات</string>
+    <string name="genres">الانواع</string>
+    <string name="playlists">قوائم التشغيل</string>
+    <string name="title">العنوان</string>
+    <string name="artist">الفنان</string>
+    <string name="album">الالبوم</string>
+    <string name="directory">الدليل</string>
+    <string name="directories">الدلائل</string>
+    <string name="loading">تحميل…</string>
+    <string name="nomedia">لايوجود ملفات وسائط,يرجى نقل الملفات الى جهازك او ضبط تفضيلاتك</string>
+    <string name="mediafiles">ملفات الوسائط</string>
+    <string name="notavailable">غير متوفر</string>
+    <string name="nosubdirectory">لايوجود دلائل فرعيه</string>
+    <string name="validation">هل انت متأكد؟</string>
+    <string name="locked">مقفل</string>
+    <string name="unlocked">غير مقفل</string>
+    <string name="surface_best_fit">الانسب</string>
+    <string name="surface_fit_horizontal">تناسب افقي</string>
+    <string name="surface_fit_vertical">تناسب عمودي</string>
+    <string name="surface_fill">ملأ</string>
+    <string name="surface_original">وسط</string>
+    <string name="thumbnail">صوره مصغره</string>
+    <string name="refresh">تحديث</string>
+    <string name="track_audio">مسار الصوت</string>
+    <string name="track_video">مسار الفيديو</string>
+    <string name="track_text">مسار الترجمه</string>
+    <string name="track_unknown">مسار غير معروف</string>
+
+    <plurals name="track_channels_info_quantity">
+        <item quantity="one">قناة واحده\n</item>
+        <item quantity="other">%1$d القنوات\n</item>
+    </plurals>
+
+    <string name="open">فتح</string>
+    <string name="open_mrl">MRL فتح</string>
+    <string name="open_mrl_dialog_title">فتح تدفق الشبكه</string>
+    <string name="open_mrl_dialog_msg">MRL ادخل شبكة: e.g. http://, mms:// or rtsp://</string>
+    <string name="error_not_compatible">اندرويد VLC المعذره,هذا الجهاز الحالي غير مدعوم بواسطة نسخة\n\nرسالة خطأ يرجى ذكر ذلك عند التصحيح:\n</string>
+
+    <!-- About -->
+    <string name="app_name_full">اندرويدVLC</string>
+    <string name="licence">الرخصه</string>
+    <string name="revision">مراجعه</string>
+    <string name="about">حول</string>
+    <string name="about_text">شعبيته كبيره ومشغل وسائط مفتوح المصدر,نسخة اندرويد تستطيع قراءة معظم الملفات وتدفقات الشبكه,VLC من اندرويد هو مدخل من مشغل الوسائط VLC</string>
+    <string name="compiled_by">مجمعه بواسطة VLC هذه النسخه من:</string>
+
+    <!-- Preferences -->
+    <string name="preferences">التفضيلات</string>
+    <string name="main_prefs_category">الرئيسيه</string>
+    <string name="clear_history">مسح محفوظات البحث</string>
+    <string name="advanced_prefs_category">متقدم</string>
+    <string name="enable_iomx">تمكين فك ترميز الاجهزه المتسارعه</string>
+    <string name="advanced_debugging">التصحيح المتقدم</string>
+    <string name="quit">ترك التطبيق</string>
+    <string name="clear_media_db">مسح قاعدة بيانات الوسائط</string>
+    <string name="media_db_cleared">قاعدة بيانات الوسائط ممسوحه!</string>
+    <string name="enable_headset_detection">كشف سماعة الرأس</string>
+    <string name="enable_headset_detection_summary">إيقاف على سماعة الرأس المحذوفه;إستئناف سماعة الرأس المدرجه</string>
+    <string name="enable_wheel_bar">تمكين شريط العجله</string>
+    <string name="enable_verbose_mode">الإسهاب</string>
+    <string name="enable_verbose_mode_summary">زيادة الإسهاب(logcat)</string>
+    <string name="aout">الصوت الخارجي</string>
+    <string name="aout_audiotrack">AudioTrack (native)</string>
+    <string name="aout_audiotrack_java">AudioTrack (Java)</string>
+    <string name="aout_opensles">ES SLفتح</string>
+
+</resources>
