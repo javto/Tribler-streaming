@@ -1,0 +1,22 @@
+\section{Nonfunctional requirements}
+
+\subsection{Must have}
+\begin{enumerate}
+\item \emph{The prototype must not introduce much extra lag on top of the start-up time before playing a video, in comparison to the desktop version of Tribler;}\\
+The time between pressing the play button and the video actually starting is decided by how fast the system gets the pieces it needs for continuous playback. In Tribler this strongly depends on the connection speed and how many seeders exist in the swarm. It can range from about eight seconds to three minutes. The prototype must not significantly increase this time.
+
+\item \emph{The prototype must be fully non-centralized;}
+No central servers can be used to facilitate the downloads.
+
+\subsection{Should have}
+\item \emph{The playback should look smooth, no visible lag should occur;}\\
+Sometimes the playback can stall because it has not yet received the pieces needed for playback, it should not however, stutter.
+
+\subsection{Could have}
+\item \emph{The prototype could have low power consumption in comparison to other VoD applications such as Youtube;}\\
+The power consumption of Youtube\footnote{http://www.youtube.com/} and a simple implementation of the Libswift\footnote{http://libswift.org/} protocol has been measured in \cite{libswift12}. A same set-up as explained in the paper can be achieved for the prototype, after which optimization of the prototype could lead to lower power consumption.
+
+\subsection{Would have}
+\item \emph{Optimize the start-up time;}
+
+\end{enumerate}

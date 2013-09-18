@@ -1,0 +1,94 @@
+\documentclass[pdftex, 10pt, a4paper]{report}
+
+\usepackage[final]{pdfpages}
+\newcommand{\HRule}{\rule{\linewidth}{0.5mm}}
+\usepackage[toc,page]{appendix}
+\usepackage{float}
+\bibliography{Orientation.main.bib}
+\usepackage{enumerate}
+\usepackage{graphicx}
+\usepackage[english]{babel}
+\usepackage{footnote}
+\usepackage{fancyhdr}
+\usepackage{tabularx}
+\usepackage{verbatim}
+\usepackage{url}
+\urlstyle{same}
+%set to which level the toc goes, 1 = up to section, 2 includes subsection, etc
+\setcounter{tocdepth}{1} 
+
+\begin{document}
+
+\pagestyle{fancy}
+\fancyhead{}
+\fancyhead[LE, LO] {\today}
+\fancyhead[CE, CO] {Final Report}
+\fancyhead[RE, RO] {version 1}
+
+\input{./title.tex}
+
+\tableofcontents
+\pagebreak
+
+\input{abstract.tex}
+\pagebreak
+
+\input{preface.tex}
+\pagebreak
+
+\input{introduction.tex}							%chapter
+\input{contents/poa/planofaction.main.tex}		%report
+\input{contents/orientation/orientation.main.tex}	%report
+
+\includepdf[pages=-]{pdf/requirements.pdf}				%report
+\includepdf[pages=-]{pdf/testandimplementationplan.pdf}	%report
+
+%martijn byebye
+%implementaton
+%conclusion
+%reflection
+%future work
+\begin{thebibliography}{9}
+
+\bibitem{internet_study}
+  	Hendrik Schulze, Klaus Mochalski,
+  	\emph{Internet Study 2008/2009},
+ 	Ipoque, Germany,
+  	2009.
+
+\bibitem{moscow}
+	Dai Clegg, Richard Barker,  
+	\emph{Case Method Fast-Track: A RAD Approach}
+	Addison-Wesley,
+	2004.
+
+\bibitem{libswift12}
+  	 R. Petrocco, J. Pouwelse and D.H.J. Epema,
+  	\emph{Performance Analysis of the Libswift P2P Streaming Protocol},
+  	IEEE P2P, TU Delft,
+  	2012.
+
+\bibitem{tribler}
+   	J.A. Pouwelse, P. Garbacki, J. Wang, A. Bakker, J. Yang, A. Iosup, D.H.J. Epema, M. Reinders, M. van Steen, H.J. Sips,
+  	\emph{Tribler: A social-based Peer-to-Peer system},
+  	TU Delft, Vrije Universiteit Amsterdam,
+  	2006.
+
+\bibitem{dispersy}
+   	Niels Zeilemaker, Boudewijn Schoon, Johan Pouwelse,
+  	\emph{Dispersy Bundle Synchronization},
+  	TU Delft, Parallel and Distributed Systems,
+  	January 2013.
+
+\bibitem{compnet}
+	Andrew S. Tanenbaum, David J. Wetherall,
+ 	\emph{Computer Networks},
+	5th edition,
+	Pearson Education,
+	2010.
+
+\end{thebibliography}
+\begin{appendices}
+\input{contents/poa/Appendices/appendices.tex}		%chapter
+\end{appendices}
+\end{document}

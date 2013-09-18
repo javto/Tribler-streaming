@@ -1,0 +1,55 @@
+\documentclass[finalreport.main.tex]{subfile}
+\bibliography{Orientation.main.bib}
+\urlstyle{same}
+
+\begin{document}
+
+\pagestyle{fancy}
+\fancyhead{}
+\fancyhead[LE, LO] {\today}
+\fancyhead[CE, CO] {Orientation Report}
+\fancyhead[RE, RO] {version 3}
+
+\input{./title.tex}
+
+\tableofcontents
+
+\pagebreak
+%\input{./abstract.tex}						%summary
+
+\input{./introduction/main.tex}					%chapter
+\input{./mobile_platforms/main.tex}				%chapter
+\input{./vod/main.tex}						%chapter.
+\input{./video_decoding/main.tex}					%chapter
+\input{./risk_analysis/main.tex}					%chapter
+
+\begin{thebibliography}{9}
+
+\bibitem{libswift12}
+   R. Petrocco, J. Pouwelse and D.H.J. Epema,
+  \emph{Performance Analysis of the Libswift P2P Streaming Protocol},
+  IEEE P2P, TU Delft,
+  2012.
+
+\bibitem{tribler}
+   J.A. Pouwelse, P. Garbacki, J. Wang, A. Bakker, J. Yang, A. Iosup, D.H.J. Epema, M. Reinders, M. van Steen, H.J. Sips,
+  \emph{Tribler: A social-based Peer-to-Peer system},
+  TU Delft, Vrije Universiteit Amsterdam,
+  2006.
+
+\bibitem{dispersy}
+   Niels Zeilemaker, Boudewijn Schoon, Johan Pouwelse,
+  \emph{Dispersy Bundle Synchronization},
+  TU Delft, Parallel and Distributed Systems,
+  January 2013.
+
+\bibitem{compnet}
+		 Andrew S. Tanenbaum, David J. Wetherall,
+ 		\emph{Computer Networks},
+		5th edition,
+		Pearson Education,
+		2010.
+
+\end{thebibliography}
+
+\end{document}

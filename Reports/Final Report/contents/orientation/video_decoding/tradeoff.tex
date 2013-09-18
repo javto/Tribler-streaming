@@ -1,0 +1,57 @@
+\section{Trade-off}
+In this section a trade-off will be made between the previously listed video decoding frameworks, resulting into a conclusion in which a framework is chosen that will be used in the prototype application of this Bachelor project. In the trade-off, the following criteria are taken into consideration:
+\begin{itemize}
+	\item[-]Number of supported multimedia file formats.
+	\item[-]Hardware decoding: to what degree does the framework support hardware accelerated decoding. 
+	\item[-]Android version support.
+	\item[-]Performance: frame rate and image quality.
+	\item[-]Updates: how often is the framework updated and maintained.
+	\item[-]Documentation: quantity of documentation. 
+	\item[-]Number of users.
+\end{itemize}
+In Table \ref{tab:vid_dec_table} an overview of the trade-off is given which shows how each of the frameworks scored against each of the listed criteria.\\
+It should be noted that the supported file formats are overlapping. This means that Dolphin Player includes support for the all the file formats that are supported in Stagefright, plus an additional set of 15 file formats. VLC for Android supports all the file formats supported by the other frameworks, plus an additional set of 167 file formats.\\
+
+\section{Conclusion}
+Based on the findings in this section, VLC is selected as the multimedia framework for the prototype.
+
+\begin{savenotes}
+\begin{table}[h]
+\caption{Trade off between three video decoding platforms for Android \label{tab:vid_dec_table}}
+	\begin{tabularx}{\textwidth}{| X|X|X|X |}
+	\hline
+	& VLC for Android & Stagefright & Dolphin Player \\ \hline
+	Number of Supported Multimedia File Formats(Video + Audio)
+	& 111+93
+	& 5+17
+	& 24+13 \\ \hline
+	Hardware Decoding 
+	& Partly (only on some devices)
+	& Yes
+	& No \\ \hline
+	Android version support
+	& Device Dependent, up to 4.3
+	& 2.0 and higher
+	& 2.1 and higher \\ \hline
+	Performance in playback
+	& Fast and Smooth
+	& Fast and Smooth
+	& Choppy Playback \\ \hline
+	Updates
+	& Frequent
+	& Frequent
+	& few to none \\ \hline
+	Documentation
+	& Extensive(but less for Android specifically)
+	& Extensive
+	& Almost none \\ \hline
+	Number of Users
+	& More than 10.000.000\footnote{\label{install}based on number of installs in the Google Play Store}
+	& More than 900.000.000\footnote{\url{http://www.forbes.com/sites/roberthof/2013/07/18/live-google-q2-earnings-fall-short-shares-down}}
+	& More than 100.000\footnote{via footnote \ref{install}} \\ \hline
+	\end{tabularx}
+\end{table}
+\end{savenotes}
+
+
+

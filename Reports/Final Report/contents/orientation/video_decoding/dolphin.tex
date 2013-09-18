@@ -1,0 +1,15 @@
+\section{Dolphin Player}
+\subsection{Introduction}
+Dolphin Player\footnote{http://code.google.com/p/dolphin-player/} is an open-source multimedia player for Android that is based on the FFmpeg multimedia framework, which allows it to decode most known multimedia file formats and compression methods. Dolphin Player is currently still a work in progress and contains many bugs and performance issues\footnote{http://code.google.com/p/dolphin-player/issues/list}.
+\subsection{Features}
+Dolphin Player can decode most of the audio and video file formats. It supports android devices with an ARMv6, ARMv7-A, x86 and MIPS architecture. Dolphin Player currently only supports non-HD video decoding.
+\subsection{Architecture}
+The architecture of Dolphin Player can be divided into a native (C/C++) part and a Java part. The native part consists of the FFmpeg library, as well as several other smaller support libraries such as the SDL library\footnote{http://libsdl.org/} that provides low level access to audio and graphics hardware via OpenGL. Another example of one of the smaller libraries used is the bzip2\footnote{http://www.bzip.org/} library which offers data compression services.
+\subsection{Documentation}
+There is hardly any documentation available, except for brief instructions on how to compile the source code.
+\subsection{Updates}
+The last update of the source code was on July 3rd, 2012\footnote{http://code.google.com/p/dolphin-player/source/list}. This shows that the source code of Dolphin Player is not recently maintained and that compatibility issues with current and future mobile devices are very likely to arise.
+\subsection{Performance}
+The current version of Dolphin Play for Android is suffering from frame lag issues, which results in frames being skipped, as well overall choppy playback. As a result of this, audio and video tracks can become out of sync. This was tested with the same method as described in Section \ref{sec:VLC_performance}.
+
+
