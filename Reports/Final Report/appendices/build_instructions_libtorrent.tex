@@ -1,0 +1,24 @@
+rutracker
+
+adapt file.cpp: ifdef __NR_fallocate to: ifndef __NR_fallocate
+
+don't forget build clean
+
+first clone the boost for android project from github:
+git clone https://github.com/MysticTreeGames/Boost-for-Android
+
+then go to the directory in which the project resides, example:
+cd git/Boost-for-Android
+
+then let boost-for-android, download and build boost by issuing the following command:
+./build-android.sh
+
+add the following to environment (sudo gedit /etc/environment)
+AndroidNDKRoot=path/to/android-ndk-r9_32
+NDK_ROOT=path/to/android-ndk-r9_32
+NDK_MODULE_PATH=path/to/Boost-for-Android
+BOOST_ROOT=path/to/boost
+BOOST_BUILD_PATH=path/to/boost/tools/build/v2
+add the following to PATH:
+path/to/Boost-for-Android
+

@@ -1,0 +1,58 @@
+check readme for building python-for-android here:
+https://github.com/kivy/python-for-android
+
+Python-to-Android currently only works with the 32-bit version of Android NDK (r9 works)
+
+This is the step by step instruction (from http://python-for-android.readthedocs.org/en/latest/toolchain/):
+
+0. clone the repository from d3vgru or kivy:
+git clone https://github.com/d3vgru/python-for-android
+(or https://github.com/kivy/python-for-android)
+
+1. Install necessary libraries:
+sudo apt-get install build-essential patch git-core ccache ant python-pip python-dev
+
+2. Install the following as well if you are on 32 bit:
+sudo apt-get install ia32-libs and libc6-dev-i386
+
+3. Ensure that you have the latest version of cython:
+pip install --upgrade cython
+
+4. Ensure you have the Android NDK and SDK
+	download SDK from: 	http://developer.android.com/sdk/index.html
+	Download NDK from:	http://developer.android.com/sdk/ndk/index.html
+
+5. Edit environment variables:
+	sudo gedit /etc/environment
+	
+	put in the following lines in (substitute path and the Xs for the correct path and version/level):
+	ANDROIDSDK=/path/to/android-sdk
+	ANDROIDNDK=/path/to/android-ndk
+	ANDROIDNDKVER=rX
+	ANDROIDAPI=X
+
+	also add to PATH:
+	:$ANDROIDNDK:$ANDROIDSDK/platform-tools:$ANDROIDSDK/tools:$PATH
+
+6. When this is done, do the following to build a distribution:
+./distribute.sh -m "name of modules" -d 'name of dist'
+(substitute with the correct names, for modules try: -m "openssl kivy pil" as example)
+
+7. Now it has built a distribution, which is located in /dist/default if -d isn't used and otherwise in the name it was given at -d "name":
+cd dist/name
+
+8. Now create the .apk:
+./build.py --package package-name --name program-name \
+--version version --dir path/to/python/program debug
+
+substitute the following:
+package-name with a valid package name, example: org.test.touchtracer
+program-name with the name of the program, example: touchtracer
+version with version number, example: 1.0
+path/to/python/program with the path to your python program, example: ../../build/kivy/kivy-master/examples/demo/touchtracer (for kivy git repo, use: ../../build/kivy/kivy-stable/examples/demo/touchtracer
+
+./build.py --package org.test.touchtracer --name touchtracer \
+--version 1.0 --dir ../../build/kivy/kivy-master/examples/demo/touchtracer debug installd
+
+you can add installd behind debug to automatically install the .apk to your Android device, the .apk itself will be in the dist/name/bin folder
+

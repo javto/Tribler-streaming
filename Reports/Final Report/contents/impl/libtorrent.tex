@@ -1,4 +1,7 @@
 \chapter{Libtorrent}
 \thispagestyle{fancy}
 \label{sec:libtorrent_impl}
-\section{Boost libraries}
+Building the libtorrent libraries for Android proved a difficult task. It was easily compiled to Linux in which the Team ran a client test to see if a torrent file could be downloaded. But Android has a different compiler, which comes with the Android NDK\footnote{http://developer.android.com/tools/sdk/ndk/index.html}. Libtorrent however, has a dependency on Boost.
+
+\section{Boost}
+This dependency meant that the Boost\footnote{http://www.boost.org/} libraries had to be build for Android. In the end, a github repository\footnote{https://github.com/MysticTreeGames/Boost-for-Android} was found which builds Boost for Android, in which also the version of Boost could be specified.

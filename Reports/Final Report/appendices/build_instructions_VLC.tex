@@ -1,0 +1,53 @@
+\chapter{Build Instructions VLC}
+\label{sec:app_vlc_build}
+\paragraph{ENVIRONMENT} \mbox{}\\
+install:
+\begin{itemize}
+\item Oracle JDK SE `latest' (tested on 7u25)
+\item Android ADT bundle (follow instructions on the download site)
+\item Android NDK R9 (including legacy toolchains)
+\end{itemize}
+
+\paragraph{SETUP}\mbox{}\\
+Edit environment variables:
+\\
+sudo gedit /etc/environment\\
+add ANDROID\_SDK=/home/user/android/android-sdk-linux\\
+add ANDROID\_NDK=/home/user/android/android-ndk-r9\\
+add ANDROID\_ABI=armeabi-v7a\\
+
+Add to PATH environment variable:\\
+/home/user/android/android-sdk-linux/platform-tools:/home/user/android/android-sdk-linux/tools\\
+install the following tools: \\
+apache-ant (or ant), autoconf, automake, autopoint,cmake, gawk (or nawk), gcc, g++, ia32-libs, build-essential, libtool, m4, patch, pkg-config, ragel, subversion, and up-to-date versions of those tools.\\
+\\
+On the command line:\\
+sudo apt-get install ant autoconf automake autopoint cmake gawk gcc g++ ia32-libs build-essential libtool m4 patch pkg-config ragel subversion\\
+\\
+Get the source code:\\
+git clone git://git.videolan.org/vlc-ports/android.git VLC\\
+
+\paragraph{COMPILING PROCESS}\mbox{}\\
+Go in to the folder VLC\\
+gedit /compile.sh\\
+Edit the mcpu flags for the appropriate target CPU (cortex-a15 for Nexus 10)\\
+gedit /vlc-android/jni/Application.mk\\
+Modify content into NDK\_TOOLCHAIN\_VERSION=4.8\\
+sh compile.sh\\
+\\
+Compiling should be done, go to device installation instructions\\
+
+\paragraph{COMPILING TROUBLESHOOT}\mbox{}\\
+If the compiling stops unsuccessfully, run the following command: find \~/vlcsourcefolder/ -name ``udiv.asm"\\
+Edit each file from the search results, and remove the spaces between the [ ] brackets, if any.\\
+sh compile.sh (start the compilation again, it will now successfully continue and finish)\\
+
+\paragraph{TARGET DEVICE INSTALLATION INSTRUCTIONS:}\mbox{}\\
+cd /vlc-android/bin/ folder\\
+Install the apk file with the 'adb install filename.apk' command\\
+
+\paragraph{ECLIPSE}\mbox{}\\
+You can load the project into eclipse(preferably from the ADT bundle) by importing android project from existing source. (new project-Android-Android project from existing code).\\
+Guide the wizard to your vlc folder and load the four projects that the wizard found.\\
+Be sure to set the dependencies in the VLC project correctly by right-clicking on that project, go to the Android tab, and setting the three other projects as libraries for VLC.\\
+You can now run and debug VLC from the Eclipse environment.\\
