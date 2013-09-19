@@ -4,4 +4,9 @@
 Building the libtorrent libraries for Android proved a difficult task. It was easily compiled to Linux in which the Team ran a client test to see if a torrent file could be downloaded. But Android has a different compiler, which comes with the Android NDK\footnote{http://developer.android.com/tools/sdk/ndk/index.html}. Libtorrent however, has a dependency on Boost.
 
 \section{Boost}
-This dependency meant that the Boost\footnote{http://www.boost.org/} libraries had to be build for Android. In the end, a github repository\footnote{https://github.com/MysticTreeGames/Boost-for-Android} was found which builds Boost for Android, in which also the version of Boost could be specified.
+This dependency meant that the Boost\footnote{http://www.boost.org/} libraries had to be build for Android. In the end, a github repository\footnote{https://github.com/MysticTreeGames/Boost-for-Android} was used which builds Boost for Android after calling a compile script, in which also the version of Boost can be specified.
+
+\section{RuTracker}
+After the Boost libraries were put in place the libtorrent library could still not be compiled with the correct compiler. Then Egbert Bouman from within the Tribler team came with a tip to look into RuTracker\footnote{http://rutracker.org/forum/index.php}, short for Russian tracker. This application for Android was open source and used libtorrent for its download functionality. After taking out the libtorrrent source and makefiles, the libtorrent libraries could then be build with the ndk-build command. A few errors were quickly resolved by changing one of libtorrent's configuration options (see appendix \ref{sec:build_libt}). The only drawback here is that it can not build the libtorrent libraries for the `mips' and `x86' architectures, meaning that some intel and mips tablets are not supported.\\ 
+
+The application could, at this stage, download torrents and send the downloaded file to the previously build (and separately installed) VLC for playback.

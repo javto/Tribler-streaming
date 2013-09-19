@@ -1,24 +1,30 @@
-rutracker
+\chapter{Build Instructions Libtorrent}
+\label{sec:build_libt}
 
-adapt file.cpp: ifdef __NR_fallocate to: ifndef __NR_fallocate
+\paragraph{BUILD BOOST}\mbox{}\\
+Tirst clone the boost for android project from github:\\
+git clone https://github.com/MysticTreeGames/Boost-for-Android\\
+\\
+Go to the directory in which the project resides, example:\\
+cd git/Boost-for-Android\\
+\\
+Then let boost-for-android, download and build boost by issuing the following command:\\
+./build-android.sh\\
 
-don't forget build clean
+\paragraph{SETUP ENVIRONMENT}\mbox{}\\
+Add the following to environment (sudo gedit /etc/environment)\\
+AndroidNDKRoot=path/to/android-ndk-r9\_32\\
+NDK\_ROOT=path/to/android-ndk-r9\_32\\
+NDK\_MODULE\_PATH=path/to/Boost-for-Android\\
+BOOST\_ROOT=path/to/boost\\
+BOOST\_BUILD\_PATH=path/to/boost/tools/build/v2\\
 
-first clone the boost for android project from github:
-git clone https://github.com/MysticTreeGames/Boost-for-Android
+add the following to PATH:\\
+path/to/Boost-for-Android\\
 
-then go to the directory in which the project resides, example:
-cd git/Boost-for-Android
+In libtorrent source:\\
+get rutracker source
+adapt file.cpp: \\
+change \emph{ifdef \_\_NR\_fallocate} to: \emph{ifndef \_\_NR\_fallocate}\\
 
-then let boost-for-android, download and build boost by issuing the following command:
-./build-android.sh
-
-add the following to environment (sudo gedit /etc/environment)
-AndroidNDKRoot=path/to/android-ndk-r9_32
-NDK_ROOT=path/to/android-ndk-r9_32
-NDK_MODULE_PATH=path/to/Boost-for-Android
-BOOST_ROOT=path/to/boost
-BOOST_BUILD_PATH=path/to/boost/tools/build/v2
-add the following to PATH:
-path/to/Boost-for-Android
-
+don't forget ndk-build clean\\
