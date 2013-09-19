@@ -33,15 +33,16 @@
 \input{abstract.tex}
 \pagebreak
 
-\input{preface.tex}
+%only in final version \input{preface.tex}
 \pagebreak
 
-\input{introduction.tex}							%chapter
-\input{contents/poa/planofaction.main.tex}		%report
-\input{contents/orientation/orientation.main.tex}	%report
+\input{introduction.tex}									%part
 
-\includepdf[pages=-]{pdf/requirements.pdf}				%report
-\includepdf[pages=-]{pdf/testandimplementationplan.pdf}	%report
+\input{contents/poa/planofaction.main.tex}				%part
+\input{contents/orientation/orientation.main.tex}			%part
+
+\input{contents/requirements/main.tex}					%part
+\input{contents/taip/testandimplementationplan.main.tex}	%part
 
 %martijn byebye
 %implementaton
