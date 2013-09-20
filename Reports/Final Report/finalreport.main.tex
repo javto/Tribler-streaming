@@ -27,13 +27,13 @@
 
 \input{./title.tex}
 
-\tableofcontents
-\pagebreak
-
 \input{abstract.tex}
 \pagebreak
 
-%only in final version \input{preface.tex}
+\input{preface.tex}
+\pagebreak
+
+\tableofcontents
 \pagebreak
 
 \input{introduction.tex}									%part
@@ -42,7 +42,7 @@
 \input{contents/orientation/orientation.main.tex}			%part
 \input{contents/requirements/main.tex}					%part
 \input{contents/taip/testandimplementationplan.main.tex}	%part
-
+\input{contents/ad/architecturaldesign.main.tex}			%part
 \input{contents/impl/main.tex}							%part
 \input{contents/final_matter/main.tex}					%part
 
@@ -88,8 +88,8 @@
 \end{thebibliography}
 \begin{appendices}
 \input{contents/poa/Appendices/appendices.tex}		%chapter
-%input meeting minutes
-\input{appendices/build_instructions_VLC.tex}
-\input{appendices/build_instructions_libtorrent.tex}
+\input{appendices/build_instructions_VLC.tex}			%build instruction
+\input{appendices/build_instructions_libtorrent.tex}		%build instruction
+\input{appendices/main.tex}							%meeting minutes
 \end{appendices}
 \end{document}
