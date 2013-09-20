@@ -17,9 +17,8 @@ The VLC for Android component will be dropped and the native Android multimedia 
 \textit{Timing of countermeasure action:}\\
 When the above listed indications appear during initial testing of the component on the target device, the countermeasure will take place. Initial testing of this component will be performed at the end of the Orientation phase.\\
 \newline
-\newline
 \textit{Impact:}\\
-As a result of dropping the VLC for Android component, the number of supported multimedia formats in the prototype will be significantly reduced. However, the fewer codecs that are supplied with Stagefright are hardware accelerated and are guaranteed to work, as these hardware-based codecs are supplied by the hardware vendor. The 'must have' functionalities of the prototype will therefore not be compromised by this solution.\\
+As a result of dropping the VLC for Android component, the number of supported multimedia formats in the prototype will be significantly reduced. However, the fewer codecs that are supplied with Stagefright are hardware accelerated and are guaranteed to work, as these hardware-based codecs are supplied by the hardware vendor. The `must have' functionalities of the prototype will therefore not be compromised by this solution.\\
 \subsection{VLC for Android not working in combination with Tribler components}
 Given the bleeding edge nature of the combination of VLC for Android with P2P streaming data, there exists a risk that this video decoding framework will not work with key components of Tribler.\\
 \newline
@@ -42,7 +41,7 @@ In case Python for Android does not work on the target devices, the Tribler core
 A plug-in for VLC will be written that will make use of the libswift\footnote{http://libswift.org/} library.\\
 \newline
 \textit{Impact:}\\
-Many of the unique Tribler functionalities will not be available, and the prototype application will not be easily extendable towards having Tribler functionalities. The reason that libswift will be used instead of the earlier described Libtorrent, is that it has been shown to have a better performance for streaming than other protocols by Petrocco et al\cite{libswift12}. Unfortunately, Tribler does not yet support libswift, so it will not be implemented in the prototype when no problems with Tribler arise.
+Many of the unique Tribler functionalities will not be available, and the prototype application will not be easily extendable towards having Tribler functionalities. The BitTorrent engine which Tribler relies on: libtorrent, will be implemented in this case.
 \subsection{Frame rate performance issue}
 \subsubsection{VLC}
 Given the fact that VLC for Android is currently still in a beta phase, the playback performance with some multimedia file formats can be unacceptable\\
