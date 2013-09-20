@@ -6,7 +6,7 @@
     android:versionName="1.0" >
 
     <uses-sdk
-        android:minSdkVersion="10"
+        android:minSdkVersion="11"
         android:targetSdkVersion="18" />
 
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
@@ -49,6 +49,10 @@
             <meta-data
                 android:name="android.app.searchable"
                 android:resource="@xml/searchable" />
+        </activity>
+        <activity
+            android:name="com.tudelft.triblersvod.example.TorrentVideoPlayerActivity"
+            android:screenOrientation="landscape" >
         </activity>
         <activity
             android:name="com.tudelft.triblersvod.example.TorrentSelectActivity"
