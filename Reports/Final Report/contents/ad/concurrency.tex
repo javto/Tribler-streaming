@@ -1,0 +1,3 @@
+\section{Concurrency}
+\label{sec:conc}
+In order to avoid blocking any processes, all major I/O will run in separate threads. All network related transactions will run in a separate network thread (upload/download of pieces). The video decoding will be performed in several parallel threads that can each run on a separate CPU core. Finally, the GUI of the prototype application will also run in its own thread. It should be noted that there will not be any complex logic or potentially blocking (synchronous) calls performed in the GUI, as this could compromise the responsiveness of the GUI, as well as the overall user experience.

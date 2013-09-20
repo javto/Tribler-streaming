@@ -22,9 +22,23 @@ BOOST\_BUILD\_PATH=path/to/boost/tools/build/v2\\
 add the following to PATH:\\
 path/to/Boost-for-Android\\
 
-In libtorrent source:\\
-get rutracker source
-adapt file.cpp: \\
-change \emph{ifdef \_\_NR\_fallocate} to: \emph{ifndef \_\_NR\_fallocate}\\
+\paragraph{EXTRACT LIBTORRENT FROM RUTRACKER}\mbox{}\\
+Download the RuTracker source:\\
+svn checkout http://softwarrior.googlecode.com/svn/tags/RutrackerDownloader/2.6.5.5/\\
+extract all from the JNI folder.\\
 
-don't forget ndk-build clean\\
+\paragraph{MODIFY CONTENTS}
+In libtorrent source, adapt file.cpp: \\
+Change \emph{ifdef \_\_NR\_fallocate} to: \emph{ifndef \_\_NR\_fallocate}\\
+
+Add the previously build Boost libraries to libboost and make sure the filenames of these libraries in Android.mk are correct\\
+In Application.mk, change or add APP\_ABI to APP\_ABI := armeabi armeabi-v7a\\
+
+\paragraph{BUILD LIBTORRENT LIBS}
+In a terminal:\\
+Go to the folder where RuTracker resides: cd path/to/RuTracker\\
+Issue the following commands:\\
+ndk-build clean\\
+ndk-build\\
+\\
+After a while it should have created the libraries libtorrent.so for both armeabi and armeabi-v7a in the libs folder.\\
