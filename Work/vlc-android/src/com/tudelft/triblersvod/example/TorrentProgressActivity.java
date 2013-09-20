@@ -2,7 +2,6 @@ package com.tudelft.triblersvod.example;
 
 import java.io.File;
 
-import org.videolan.vlc.MediaLibrary;
 import org.videolan.vlc.VLCApplication;
 import org.videolan.vlc.gui.video.VideoPlayerActivity;
 
@@ -11,10 +10,13 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.util.Log;
+import android.view.MenuItem;
+import android.view.View;
 import android.webkit.MimeTypeMap;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -49,7 +51,9 @@ public class TorrentProgressActivity extends Activity {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		Log.d(DEBUG_TAG, "onCreate");
 		setContentView(R.layout.activity_torrentprogress);
+		getActionBar().setDisplayHomeAsUpEnabled(true);
 
 		tStatus = (TextView) findViewById(R.id.torrentprogress_status);
 		tName = (TextView) findViewById(R.id.torrentprogress_name);
@@ -58,11 +62,34 @@ public class TorrentProgressActivity extends Activity {
 		tProgress = (TextView) findViewById(R.id.torrentprogress_progress);
 		tProgressBar = (ProgressBar) findViewById(R.id.torrentprogress_progressbar);
 
-		new TorrentAdder().execute();
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB)
+			new TorrentAdder()
+					.executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
+		else
+			new TorrentAdder().execute();
+	}
+
+	@Override
+	protected void onResume() {
+		super.onResume();
+		Log.d(DEBUG_TAG, "onResume");
+		libTorrent().ResumeSession();
+		new UIUpdater().execute();
+	}
+
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		switch (item.getItemId()) {
+		case android.R.id.home:
+			finish();
+			return true;
+		default:
+			return super.onOptionsItemSelected(item);
+		}
 	}
 
 	private String getTorrentFileName() {
-		return getIntent().getExtras().getString(KEY_FILENAME);
+		return getIntent().getExtras().getString(KEY_FILENAME).substring(7);
 	}
 
 	private String getContentName() {
@@ -80,7 +107,8 @@ public class TorrentProgressActivity extends Activity {
 
 		@Override
 		protected Void doInBackground(Void... params) {
-			Log.d(DEBUG_TAG, "TorrentAdder: doInBackground");
+			Log.d(DEBUG_TAG, "TorrentAdder: doInBackground + "
+					+ torrentFileName);
 			libTorrent().SetSession(LISTEN_PORT, LIMIT_UL, LIMIT_DL);
 			boolean sequential = libTorrent().AddTorrent(getSavePath(),
 					torrentFileName, StorageModes.ALLOCATE.ordinal());
@@ -92,12 +120,10 @@ public class TorrentProgressActivity extends Activity {
 		@Override
 		protected void onPostExecute(Void result) {
 			super.onPostExecute(result);
-			Log.d(DEBUG_TAG, "TorrentAdder: onPostExecute");
+			Log.d(DEBUG_TAG, "TorrentAdder: adding done");
 			tName.setText(torrentFileName);
 			tSavePath.setText(getSavePath());
 			tContentName.setText(libTorrent().GetTorrentName(torrentFileName));
-
-			new UIUpdater().execute();
 		}
 	}
 
@@ -108,7 +134,8 @@ public class TorrentProgressActivity extends Activity {
 
 		@Override
 		protected Void doInBackground(Void... params) {
-			while (!isCancelled()) {
+			Log.d(DEBUG_TAG, "UIUpdater: doInBackground");
+			while (!isFinishing()) {
 				try {
 					Thread.sleep(UPDATEINTERVAL);
 				} catch (InterruptedException e) {
@@ -140,6 +167,8 @@ public class TorrentProgressActivity extends Activity {
 			} else {
 				progressText = "please wait";
 			}
+
+			Log.v(DEBUG_TAG, "PROGRESS: " + progressText);
 			tProgress.setText(progressText);
 			tProgressBar.setIndeterminate(false);
 			tProgressBar.setMax((int) totalSize);
@@ -153,11 +182,14 @@ public class TorrentProgressActivity extends Activity {
 			// openFiles(files.split("\\r?\\n"), contentName);
 			// }
 
-			if (!opened && (progressSize * 2) > totalSize) {
+			if (!opened &&
+			// TorrentState.values()[state] == TorrentState.SEEDING
+			// (progressSize * 10) > totalSize
+					progressSize > 6) {
 				opened = true;
 				Log.v(DEBUG_TAG, "OPENING!!");
 				String files = libTorrent().GetTorrentFiles(contentName);
-				openFiles(files.split("\\r?\\n"), contentName);
+				openFiles(files.split("\\r?\\n"), contentName, true);
 				// File file = getLargestFile(getContentName());
 				// VideoPlayerActivity.start(TorrentProgressActivity.this,
 				// "file://" + file.getAbsolutePath(), false);
@@ -169,7 +201,7 @@ public class TorrentProgressActivity extends Activity {
 		return ((VLCApplication) getApplication()).getLibTorrent();
 	}
 
-	public void openFiles(String[] files, String contentFile) {
+	public void openFiles(String[] files, String contentFile, boolean fromStart) {
 		try {
 			if (files.length == 1) {
 				// Open file directly
@@ -188,12 +220,18 @@ public class TorrentProgressActivity extends Activity {
 				intent.setDataAndType(Uri.fromFile(file), type);
 				startActivity(intent);
 			} else {
-				// libTorrent().AbortSession();
+				libTorrent().PauseSession();
 				// libTorrent().RemoveTorrent(getContentName());
 				File file = getLargestFile(contentFile);
-				final String path = file.getAbsolutePath();
+				final String path = "file://" + file.getAbsolutePath();
 				Log.d(DEBUG_TAG, "Starting: " + path);
-				VideoPlayerActivity.start(this, "file://" + path, true);
+				VideoPlayerActivity.start(this, path, fromStart);
+				new Handler().postDelayed(new Runnable() {
+					@Override
+					public void run() {
+						libTorrent().ResumeSession();
+					}
+				}, 1000);
 				// Log.d(DEBUG_TAG, "----updating: " + file.getParent() + " - "
 				// + file.exists());
 				// Intent update = new Intent(Intent.ACTION_MEDIA_MOUNTED,
@@ -243,5 +281,12 @@ public class TorrentProgressActivity extends Activity {
 	protected void onDestroy() {
 		super.onDestroy();
 		libTorrent().AbortSession();
+		// libTorrent().RemoveTorrent(getContentName());
+	}
+
+	public void watch(View button) {
+		String contentName = getContentName();
+		String files = libTorrent().GetTorrentFiles(contentName);
+		openFiles(files.split("\\r?\\n"), contentName, false);
 	}
 }

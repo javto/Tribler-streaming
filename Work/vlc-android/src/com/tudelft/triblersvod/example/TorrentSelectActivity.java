@@ -43,8 +43,7 @@ public class TorrentSelectActivity extends Activity {
 		if (uri == null)
 			return "";
 		else
-			return StringEscapeUtils.unescapeHtml4(uri.replaceFirst("file://",
-					""));
+			return StringEscapeUtils.unescapeHtml4(uri);
 	}
 
 	private void tryStartingTorrent(String fileName) {
