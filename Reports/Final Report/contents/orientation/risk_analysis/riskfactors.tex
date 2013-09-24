@@ -41,7 +41,7 @@ In case Python for Android does not work on the target devices, the Tribler core
 A plug-in for VLC will be written that will make use of the libswift\footnote{http://libswift.org/} library.\\
 \newline
 \textit{Impact:}\\
-Many of the unique Tribler functionalities will not be available, and the prototype application will not be easily extendable towards having Tribler functionalities. The BitTorrent engine which Tribler relies on: libtorrent, will be implemented in this case.
+Many of the unique Tribler functionalities will not be available, and the prototype application will not be easily extendable towards having Tribler functionalities. The BitTorrent engine which Tribler relies on: Libtorrent, will be implemented in this case.
 \subsection{Frame rate performance issue}
 \subsubsection{VLC}
 Given the fact that VLC for Android is currently still in a beta phase, the playback performance with some multimedia file formats can be unacceptable\\
@@ -53,8 +53,3 @@ Based on how many file formats are affected by the performance issue, the VLC co
 In the worst case, the number of supported multimedia codecs in the prototype will be significantly reduced. However, the fewer codecs that are supplied in combination with Stagefright will be hardware accelerated and are guaranteed to work, as these hardware-based codecs are supplied by the hardware vendor. The 'must have' functionalities of the prototype will therefore not be compromised by this solution.\\
 \newline
 In the best case, only a few uncommon multimedia file formats will be unsupported in the prototype application, which will hardly affect its video decoding capabilities.
-
-
-
-
-

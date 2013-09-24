@@ -28,7 +28,7 @@ svn checkout http://softwarrior.googlecode.com/svn/tags/RutrackerDownloader/2.6.
 extract all from the JNI folder.\\
 
 \paragraph{MODIFY CONTENTS}
-In libtorrent source, adapt file.cpp: \\
+In Libtorrent source, adapt file.cpp: \\
 Change \emph{ifdef \_\_NR\_fallocate} to: \emph{ifndef \_\_NR\_fallocate}\\
 
 Add the previously build Boost libraries to libboost and make sure the filenames of these libraries in Android.mk are correct\\

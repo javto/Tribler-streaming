@@ -1,32 +1,43 @@
-Download libtorrent from:
-https://code.google.com/p/libtorrent/downloads/list 
+Build Instructions Libtorrent
 
-extract libtorrent werever you like, for example in /home/user/libtorrent/
+BUILD BOOST
+Tirst clone the boost for android project from github:
+git clone https://github.com/MysticTreeGames/Boost-for-Android
 
-install boost:
-sudo apt-get install libboost-all-dev
+Go to the directory in which the project resides, example:
+cd git/Boost-for-Android
 
-go to libtorrent folder:
-cd /home/user/libtorrent/
+Then let boost-for-android, download and build boost by issuing the following command:
+./build-android.sh
 
-run config:
-./configure --disable-debug
+SETUP ENVIRONMENT
+Add the following to environment (sudo gedit /etc/environment)
+AndroidNDKRoot=path/to/android-ndk-r9_32
+NDK_ROOT=path/to/android-ndk-r9_32
+NDK_MODULE_PATH=path/to/Boost-for-Android
+BOOST_ROOT=path/to/boost
+BOOST_BUILD_PATH=path/to/boost/tools/build/v2
 
-build libtorrent:
-make
+add the following to PATH:
+path/to/Boost-for-Android
 
-optional: run tests:
-make check
+EXTRACT LIBTORRENT FROM RUTRACKER
+Download the RuTracker source:
+svn checkout http://softwarrior.googlecode.com/svn/tags/RutrackerDownloader/2.6.5.5/
+extract all from the JNI folder.
 
+MODIFY CONTENTS
+In Libtorrent source, adapt file.cpp: 
+Change ifdef __NR_fallocate to: ifndef __NR_fallocate
 
---------------------------
-adapt user-config.jam
-set paths to arm-linux-androideabi-ar and arm-linux-androideabi-g++ correct (in both: "using gcc : androidR8e" and "using gcc : androidR8b") by referring to the Android NDK root as so:
-$(AndroidNDKRoot)/toolchains/arm-linux-androideabi-4.6/prebuilt/linux-x86/bin/arm-linux-androideabi-g++
-$(AndroidNDKRoot)/toolchains/arm-linux-androideabi-4.6/prebuilt/linux-x86/bin/arm-linux-androideabi-ar
+Add the previously build Boost libraries to libboost and make sure the filenames of these libraries in Android.mk are correct
+In Application.mk, change or add APP_ABI to APP_ABI := armeabi armeabi-v7a
 
+BUILD LIBTORRENT LIBS
+In a terminal:
+Go to the folder where RuTracker resides: cd path/to/RuTracker
+Issue the following commands:
+ndk-build clean
+ndk-build
 
-for building libtorrent to android:
-
-sudo b2 --user-config=/home/jaap/git/Boost-for-Android/boost_1_53_0/tools/build/v2/user-config.jam toolset=gcc-androidR8e boost=source link=static runtime-link=static target-os=linux --stagedir=android release
-
+After a while it should have created the libraries libtorrent.so for both armeabi and armeabi-v7a in the libs folder.

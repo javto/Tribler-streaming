@@ -1,7 +1,22 @@
 \section{Conclusion}
 \thispagestyle{fancy}
-The team started with the research question:\\
+In response to the growth of Internet traffic on mobile devices and to meet the increasing demands of the market, the Team set out to develop a mobile version of Tribler's Video on Demand. The following research question was central to the research and development of the sought-after prototype: \\
 
 \textit{``How can we make video-on-demand available for mobile devices using a non-centralized approach?''}\\
 
-In the end, through the prototype application, the Team has created a video on demand service for mobile devices using a non-centralized approach. 
+The solution is created in the form of a prototype Android application, which features a non-centralized Video on Demand service. As a result, the following contributions are made:
+\begin{itemize}
+\item An open source application on Android, which streams video and audio from torrents.
+\item An application, which can hardly be taken down by political intervention or other techniques. (see Section \ref{sec:central} for more advantages of a non-centralized approach)
+\end{itemize}
+
+\subsection{Limitations}
+The application is still a prototype; a number of bugs and inherent limitations are still in the program including the following:
+
+\begin{itemize}
+\item It cannot play DVD's and Bluray DVD's, the video in a DVD is divided over multiple files, but the application can stream only one file. It will play one part of the DVD and stop after that.
+\item It doesn't support playlists yet, so if an album is downloaded, it will only play one file of that album.
+\item At some times, the file doesn't download and the application has to be restarted before it downloads again.
+\item The torrent file (.torrent) itself has to be downloaded externally.
+\item The download speed of a file is based on the availability in the swarm and upload speed of other peers as well as the maximum connection speed set by the user's Internet Service Provider. This greatly affects how long it takes before a file starts playing. This limitation is inherent to the disadvantages of using a non-centralized approach.
+\end{itemize}
