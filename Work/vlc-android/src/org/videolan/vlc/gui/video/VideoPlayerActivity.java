@@ -70,8 +70,10 @@ import android.graphics.Color;
 import android.graphics.ImageFormat;
 import android.graphics.PixelFormat;
 import android.media.AudioManager;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.preference.PreferenceManager;
@@ -98,7 +100,11 @@ import android.widget.SeekBar;
 import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.TextView;
 
+import com.softwarrior.libtorrent.LibTorrent;
+import com.tudelft.triblersvod.example.FilePriority;
 import com.tudelft.triblersvod.example.R;
+import com.tudelft.triblersvod.example.StorageModes;
+import com.tudelft.triblersvod.example.TorrentState;
 
 public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 	public final static String TAG = "VLC/VideoPlayerActivity";
@@ -204,11 +210,23 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 
 	}
 
+	// TRIBLER
+	private boolean torrentFile;
+	private String contentName;
+	private long fileLength;
+
+	private LibTorrent libTorrent() {
+		return ((VLCApplication) getApplication()).getLibTorrent();
+	}
+
 	@Override
 	@TargetApi(Build.VERSION_CODES.HONEYCOMB)
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.player);
+
+		// TRIBLER INIT
+		libTorrent();
 
 		SharedPreferences pref = PreferenceManager
 				.getDefaultSharedPreferences(this);
@@ -779,7 +797,9 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 	};
 
 	private boolean canShowProgress() {
-		return !mDragging && mShowing && mLibVLC.isPlaying();
+		// TRIBLER
+		return true;
+		// return !mDragging && mShowing && mLibVLC.isPlaying();
 	}
 
 	private void endReached() {
@@ -791,6 +811,8 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 					load();
 				}
 			}, 1000);
+		} else if (torrentFile) {
+			// TRIBLER
 		} else {
 			/* Exit player when reaching the end */
 			mEndReached = true;
@@ -1388,11 +1410,12 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 			}
 			mOverlayProgress.setVisibility(View.VISIBLE);
 		}
-		Message msg = mHandler.obtainMessage(FADE_OUT);
-		if (timeout != 0) {
-			mHandler.removeMessages(FADE_OUT);
-			mHandler.sendMessageDelayed(msg, timeout);
-		}
+		// TRIBLER
+		// Message msg = mHandler.obtainMessage(FADE_OUT);
+		// if (timeout != 0) {
+		// mHandler.removeMessages(FADE_OUT);
+		// mHandler.sendMessageDelayed(msg, timeout);
+		// }
 		updateOverlayPausePlay();
 	}
 
@@ -1410,15 +1433,17 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 						this, android.R.anim.fade_out));
 				mOverlayOption.startAnimation(AnimationUtils.loadAnimation(
 						this, android.R.anim.fade_out));
-				mOverlayProgress.startAnimation(AnimationUtils.loadAnimation(
-						this, android.R.anim.fade_out));
+				// TRIBLER
+				// mOverlayProgress.startAnimation(AnimationUtils.loadAnimation(
+				// this, android.R.anim.fade_out));
 				mOverlayInterface.startAnimation(AnimationUtils.loadAnimation(
 						this, android.R.anim.fade_out));
 			}
 			mOverlayLock.setVisibility(View.INVISIBLE);
 			mOverlayHeader.setVisibility(View.INVISIBLE);
 			mOverlayOption.setVisibility(View.INVISIBLE);
-			mOverlayProgress.setVisibility(View.INVISIBLE);
+			// TRIBLER
+			// mOverlayProgress.setVisibility(View.INVISIBLE);
 			mOverlayInterface.setVisibility(View.INVISIBLE);
 			mShowing = false;
 			dimStatusBar(true);
@@ -1479,6 +1504,26 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 			mLength.setText(mDisplayRemainingTime && length > 0 ? "- "
 					+ Util.millisToString(length - time) : Util
 					.millisToString(length));
+
+		// TRIBLER
+		if (torrentFile) {
+			int max = mSeekbar.getMax();
+			int sizeMB = (int) (fileLength / (1024 * 1024));
+			int progress = (int) (sizeMB == 0 ? 0 : (max * libTorrent()
+					.GetTorrentProgressSize(contentName)) / sizeMB);
+			Log.v(TAG, "MAX: " + max + " | SIZE: " + sizeMB + " | progress: "
+					+ progress);
+			mSeekbar.setSecondaryProgress(progress);
+			((TextView) findViewById(R.id.debug_libtorrent))
+					.setText(libTorrent().GetTorrentStatusText(contentName)
+							+ "\n"
+							+ libTorrent().GetTorrentProgressSize(contentName)
+							+ " / "
+							+ (fileLength / (1024 * 1024))
+							+ "\n"
+							+ TorrentState.values()[libTorrent()
+									.GetTorrentState(contentName)].getName());
+		}
 
 		return time;
 	}
@@ -1591,6 +1636,85 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 			itemPosition = getIntent().getExtras().getInt("itemPosition", -1);
 		}
 
+		// TRIBLER
+		if (mLocation != null && mLocation.endsWith(".torrent")) {
+			torrentFile = true;
+			Log.d(TAG, "GOT TORRENT FILE: " + mLocation);
+			mLocation = mLocation.substring(7);
+			Log.d(TAG, "GOT TORRENT FILE: " + mLocation);
+			File savePath = new File(Environment.getExternalStorageDirectory(),
+					"Download");
+			Log.d(TAG, "SAVEPATH: " + savePath.getAbsolutePath());
+			libTorrent().AddTorrent(savePath.getAbsolutePath(), mLocation,
+					StorageModes.ALLOCATE.ordinal());
+			contentName = libTorrent().GetTorrentName(mLocation);
+			Log.d(TAG, "TorrentName: " + contentName);
+			Log.d(TAG, "Files: " + libTorrent().GetTorrentFiles(contentName));
+
+			String[] files = libTorrent().GetTorrentFiles(contentName).split(
+					"\\r?\\n");
+			long[] sizes = new long[files.length];
+			byte[] priorities = libTorrent().GetTorrentFilesPriority(
+					contentName);
+
+			fileLength = 0;
+			int biggestFileIndex = 0;
+
+			for (int i = 0; i < files.length; i++) {
+				String file = files[i];
+				int spaceIndex = file.lastIndexOf(" ");
+				files[i] = file.substring(0, spaceIndex);
+				String sizeString = file.substring(spaceIndex + 1);
+				sizes[i] = getSize(sizeString);
+
+				Log.v(TAG, "File: " + files[i] + " | " + sizes[i] + " | "
+						+ FilePriority.values()[priorities[i]]);
+
+				if (sizes[i] > fileLength) {
+					priorities[biggestFileIndex] = FilePriority.DONTDOWNLOAD
+							.getByte();
+					fileLength = sizes[i];
+					biggestFileIndex = i;
+					priorities[biggestFileIndex] = FilePriority.MAXPRIORITY
+							.getByte();
+				} else {
+					priorities[i] = FilePriority.DONTDOWNLOAD.getByte();
+				}
+			}
+
+			Log.v(TAG, "=== RESULT ===");
+			for (int i = 0; i < files.length; i++) {
+				Log.v(TAG, "File: " + files[i] + " | " + sizes[i] + " | "
+						+ FilePriority.values()[priorities[i]]);
+			}
+			libTorrent().SetTorrentFilesPriority(priorities, contentName);
+			File location = new File(savePath, files[biggestFileIndex]);
+			mLocation = "file://" + location.getAbsolutePath();
+			new AsyncTask<Void, Void, Void>() {
+
+				@Override
+				protected Void doInBackground(Void... params) {
+					while (!isFinishing()) {
+						try {
+							Thread.sleep(300);
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+						publishProgress();
+					}
+					return null;
+				}
+
+				@Override
+				protected void onProgressUpdate(Void... values) {
+					super.onProgressUpdate(values);
+					setOverlayProgress();
+				}
+			}.execute();
+			while (!location.exists()) {
+			}
+		}
+
 		mSurface.setKeepScreenOn(true);
 
 		/* Start / resume playback */
@@ -1642,6 +1766,8 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 					mLibVLC.setTime(intentPosition);
 			}
 
+			// Subtitles
+
 			String subtitleList_serialized = preferences.getString(
 					PreferencesActivity.VIDEO_SUBTITLE_FILES, null);
 			ArrayList<String> prefsList = new ArrayList<String>();
@@ -1676,6 +1802,34 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 			title = itemTitle;
 		}
 		mTitle.setText(title);
+	}
+
+	private long getSize(String sizeString) {
+		sizeString = sizeString.toLowerCase();
+		Log.v(TAG, "getSize(" + sizeString + ")");
+		long res = 0;
+		int factor = 1;
+		if (sizeString.endsWith("kb")) {
+			sizeString = sizeString.substring(0, sizeString.length() - 2);
+			factor = 1000;
+		} else if (sizeString.endsWith("mb")) {
+			sizeString = sizeString.substring(0, sizeString.length() - 2);
+			factor = 1000000;
+		} else if (sizeString.endsWith("gb")) {
+			sizeString = sizeString.substring(0, sizeString.length() - 2);
+			factor = 1000000000;
+		} else if (sizeString.endsWith("b")) {
+			sizeString = sizeString.substring(0, sizeString.length() - 1);
+		}
+
+		Log.v(TAG, "getSize(" + sizeString + " * " + factor + ")");
+		try {
+			res = (long) (Double.parseDouble(sizeString) * factor);
+		} catch (NumberFormatException e) {
+			Log.e(TAG, e.getLocalizedMessage());
+		}
+
+		return res;
 	}
 
 	@SuppressWarnings("deprecation")

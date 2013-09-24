@@ -3,12 +3,15 @@
     android:layout_width="fill_parent"
     android:layout_height="fill_parent" >
 
-    <!-- the double FrameLayout is necessary here to do cropping on the right
-     (which requires the surface not be centered), while keeping the result centered -->
+    <!--
+     the double FrameLayout is necessary here to do cropping on the right
+     (which requires the surface not be centered), while keeping the result centered
+    -->
+
     <FrameLayout
-        android:fitsSystemWindows="false"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" >
+        android:layout_height="match_parent"
+        android:fitsSystemWindows="false" >
 
         <FrameLayout
             android:id="@+id/player_surface_frame"
@@ -25,9 +28,9 @@
     </FrameLayout>
 
     <RelativeLayout
-        android:fitsSystemWindows="true"
+        android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_width="match_parent">
+        android:fitsSystemWindows="true" >
 
         <TextView
             android:id="@+id/player_overlay_info"
@@ -208,6 +211,12 @@
                 android:layout_height="40dip"
                 android:background="@drawable/ic_lock" />
         </LinearLayout>
-
     </RelativeLayout>
+
+    <TextView
+        android:id="@+id/debug_libtorrent"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp" />
+
 </RelativeLayout>
