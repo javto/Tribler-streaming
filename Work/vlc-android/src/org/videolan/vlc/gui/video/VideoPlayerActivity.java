@@ -1514,7 +1514,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 		if (torrentFile) {
 			int max = mSeekbar.getMax();
 			int sizeMB = (int) (fileLength / (1024 * 1024));
-			// HACK pretend you are not as fast as you are.
+			// TRIBLER HACK pretend you are not as fast as you are.
 			long progressSize = libTorrent()
 					.GetTorrentProgressSize(contentName);
 			int hackMb = sizeMB < max && progressSize > 5 ? 5 : 0;
@@ -1675,6 +1675,9 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 			Log.d(TAG, "SAVEPATH: " + savePath.getAbsolutePath());
 			libTorrent().AddTorrent(savePath.getAbsolutePath(), mLocation,
 					StorageModes.ALLOCATE.ordinal());
+
+			// Delete previous torrent cache
+
 			contentName = libTorrent().GetTorrentName(mLocation);
 			String contentNameDir = new File(savePath, contentName)
 					.getAbsolutePath();
@@ -1697,8 +1700,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 			}
 			e.commit();
 
-			Log.d(TAG, "TorrentName: " + contentName);
-			Log.d(TAG, "Files: " + libTorrent().GetTorrentFiles(contentName));
+			// DFind biggest file, so you can play it.
 
 			String[] files = libTorrent().GetTorrentFiles(contentName).split(
 					"\\r?\\n");
@@ -1731,6 +1733,8 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 				}
 			}
 
+			// Set priorities to only biggest file gets downloaded
+
 			Log.v(TAG, "=== RESULT ===");
 			for (int i = 0; i < files.length; i++) {
 				Log.v(TAG, "File: " + files[i] + " | " + sizes[i] + " | "
@@ -1754,20 +1758,17 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 		Log.v("TRIBLER_DEBUG", "Start / resume playback: ");
 		/* Start / resume playback */
 		if (dontParse && itemPosition >= 0) {
-			Log.v("TRIBLER_DEBUG", "dontParse && itemPosition >= 0");
 			// Provided externally from AudioService
 			Log.d(TAG, "Continuing playback from AudioService at index "
 					+ itemPosition);
 			savedIndexPosition = itemPosition;
 			if (!mLibVLC.isPlaying()) {
-				Log.v("TRIBLER_DEBUG", "!mLibVLC.isPlaying()");
 				// AudioService-transitioned playback for item after sleep and
 				// resme
 				mLibVLC.playIndex(savedIndexPosition);
 				dontParse = false;
 			}
 		} else if (savedIndexPosition > -1) {
-			Log.v("TRIBLER_DEBUG", "savedIndexPosition > -1");
 			mLibVLC.setMediaList();
 			mLibVLC.playIndex(savedIndexPosition);
 		} else if (mLocation != null && mLocation.length() > 0 && !dontParse) {
@@ -1780,6 +1781,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 			Log.v("TRIBLER_DEBUG", "savedIndexPosition = " + savedIndexPosition);
 			mLibVLC.playIndex(savedIndexPosition);
 
+			// TODO: Wait intil videoLenth is known, and play after
 			new AsyncTask<Void, Void, Void>() {
 				@Override
 				protected Void doInBackground(Void... params) {
@@ -1788,7 +1790,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 						mLibVLC.getMediaList().add(mLocation, false);
 
 						savedIndexPosition = mLibVLC.getMediaList().size() - 1;
-						mLibVLC.playIndex(savedIndexPosition);
+						// mLibVLC.playIndex(savedIndexPosition);
 						try {
 							Thread.sleep(1000);
 						} catch (InterruptedException e) {
@@ -1822,9 +1824,6 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 				};
 
 			}.execute();
-			// TODO TRIBLER: only play after fileEnd is known?
-		} else {
-			Log.v("TRIBLER_DEBUG", "noneOfTheAbove");
 		}
 
 		Log.v("TRIBLER_DEBUG", "SETTING MEDIA");
@@ -1837,10 +1836,8 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 			Media media = MediaDatabase.getInstance(this).getMedia(this,
 					mLocation);
 			if (media != null) {
-				Log.v("TRIBLER_DEBUG", "media != null");
 				// in media library
 				if (media.getTime() > 0 && !fromStart) {
-					Log.v("TRIBLER_DEBUG", "media.getTime() > 0 && !fromStart");
 					mLibVLC.setTime(media.getTime());
 				}
 
@@ -1898,10 +1895,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 					title = title.substring(0, dotIndex);
 			}
 		} else if (itemTitle != null) {
-			Log.v("TRIBLER_DEBUG", "itemTitle != null");
 			title = itemTitle;
-		} else {
-			Log.v("TRIBLER_DEBUG", "NOTEVENTHAT");
 		}
 		mTitle.setText(title);
 	}
