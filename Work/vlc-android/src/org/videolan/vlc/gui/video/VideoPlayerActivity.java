@@ -109,6 +109,8 @@ import com.tudelft.triblersvod.example.TorrentState;
 public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 	public final static String TAG = "VLC/VideoPlayerActivity";
 
+	public final static String KEY_LATEST_CONTENT = "key_latest_content";
+
 	// Internal intent identifier to distinguish between internal launch and
 	// external intent.
 	protected final static String PLAY_FROM_VIDEOGRID = "org.videolan.vlc.gui.video.PLAY_FROM_VIDEOGRID";
@@ -1509,10 +1511,14 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 		if (torrentFile) {
 			int max = mSeekbar.getMax();
 			int sizeMB = (int) (fileLength / (1024 * 1024));
-			int progress = (int) (sizeMB == 0 ? 0 : (max * libTorrent()
-					.GetTorrentProgressSize(contentName)) / sizeMB);
-			Log.v(TAG, "MAX: " + max + " | SIZE: " + sizeMB + " | progress: "
-					+ progress);
+			// HACK pretend you are not as fast as you are.
+			long progressSize = libTorrent()
+					.GetTorrentProgressSize(contentName);
+			int hackMb = sizeMB < max && progressSize > 5 ? 5 : 0;
+			int progress = (int) (sizeMB == 0 ? 0
+					: (max * progressSize - hackMb) / sizeMB);
+			// Log.v(TAG, "MAX: " + max + " | SIZE: " + sizeMB + " | progress: "
+			// + progress);
 			mSeekbar.setSecondaryProgress(progress);
 			((TextView) findViewById(R.id.debug_libtorrent))
 					.setText(libTorrent().GetTorrentStatusText(contentName)
@@ -1582,6 +1588,12 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 		mSurface.setKeepScreenOn(false);
 	}
 
+	// TRIBLER
+	private File getTorrentDownloadDir() {
+		return new File(new File(Environment.getExternalStorageDirectory(),
+				"Download"), "TriblerStreamingCache");
+	}
+
 	/**
 	 * External extras: - position (long) - position of the video to start with
 	 * (in ms)
@@ -1642,8 +1654,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 			Log.d(TAG, "GOT TORRENT FILE: " + mLocation);
 			mLocation = mLocation.substring(7);
 			Log.d(TAG, "GOT TORRENT FILE: " + mLocation);
-			File savePath = new File(Environment.getExternalStorageDirectory(),
-					"Download");
+			File savePath = getTorrentDownloadDir();
 			Log.d(TAG, "SAVEPATH: " + savePath.getAbsolutePath());
 			libTorrent().AddTorrent(savePath.getAbsolutePath(), mLocation,
 					StorageModes.ALLOCATE.ordinal());
@@ -1710,9 +1721,15 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 					super.onProgressUpdate(values);
 					setOverlayProgress();
 				}
-			}.execute();
+			};// .execute();
 			while (!location.exists()) {
+				try {
+					Thread.sleep(300);
+				} catch (InterruptedException e) {
+					Log.d(TAG, "================ Doesnt Exist Yet");
+				}
 			}
+			Log.d(TAG, "!!!!!!!!!! Exists !!!!!!!!!!!!");
 		}
 
 		mSurface.setKeepScreenOn(true);

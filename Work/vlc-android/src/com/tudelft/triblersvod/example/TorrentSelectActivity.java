@@ -1,9 +1,13 @@
 package com.tudelft.triblersvod.example;
 
+import java.net.URLDecoder;
+
 import org.apache.commons.lang3.StringEscapeUtils;
+import org.videolan.vlc.gui.video.VideoPlayerActivity;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -40,20 +44,18 @@ public class TorrentSelectActivity extends Activity {
 	}
 
 	private String cleanUriPath(String uri) {
-		if (uri == null)
-			return "";
-		else
-			return StringEscapeUtils.unescapeHtml4(uri);
+		return uri == null ? "" : URLDecoder.decode(uri);
 	}
 
 	private void tryStartingTorrent(String fileName) {
 		Log.d(DEBUG_TAG, "Trying to start: " + fileName);
-		if (fileName.endsWith(".torrent"))
-			startActivity(TorrentProgressActivity
-					.getStartIntent(this, fileName));
-		else
+		if (fileName.endsWith(".torrent")) {
+			Intent i = new Intent(this, VideoPlayerActivity.class);
+			i.setAction(Intent.ACTION_VIEW);
+			i.setData(Uri.parse(fileName));
+			startActivity(i);
+		} else
 			Toast.makeText(this, "Error, filename did not end with '.torrent'",
 					Toast.LENGTH_LONG).show();
 	}
-
 }
