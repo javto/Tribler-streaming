@@ -23,6 +23,7 @@ package org.videolan.vlc.gui.video;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -63,6 +64,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.database.Cursor;
@@ -110,6 +112,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 	public final static String TAG = "VLC/VideoPlayerActivity";
 
 	public final static String KEY_LATEST_CONTENT = "key_latest_content";
+	public final static String KEY_LATEST_CONTENT_DIR = "key_latest_content_dir";
 
 	// Internal intent identifier to distinguish between internal launch and
 	// external intent.
@@ -1594,6 +1597,20 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 				"Download"), "TriblerStreamingCache");
 	}
 
+	// TRIBLER
+	public static boolean deleteRecursive(File path)
+			throws FileNotFoundException {
+		if (!path.exists())
+			throw new FileNotFoundException(path.getAbsolutePath());
+		boolean ret = true;
+		if (path.isDirectory()) {
+			for (File f : path.listFiles()) {
+				ret = ret && deleteRecursive(f);
+			}
+		}
+		return ret && path.delete();
+	}
+
 	/**
 	 * External extras: - position (long) - position of the video to start with
 	 * (in ms)
@@ -1659,6 +1676,27 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 			libTorrent().AddTorrent(savePath.getAbsolutePath(), mLocation,
 					StorageModes.ALLOCATE.ordinal());
 			contentName = libTorrent().GetTorrentName(mLocation);
+			String contentNameDir = new File(savePath, contentName)
+					.getAbsolutePath();
+			SharedPreferences prefs = PreferenceManager
+					.getDefaultSharedPreferences(this);
+			String latestContent = prefs.getString(KEY_LATEST_CONTENT, "");
+			String latestContentDir = prefs.getString(KEY_LATEST_CONTENT_DIR,
+					"");
+			Editor e = prefs.edit();
+			if (latestContent.equals(contentName)) {
+				// same file opened
+			} else {
+				e.putString(KEY_LATEST_CONTENT, contentName);
+				e.putString(KEY_LATEST_CONTENT_DIR, contentNameDir);
+				try {
+					deleteRecursive(new File(latestContentDir));
+				} catch (FileNotFoundException fnfe) {
+					fnfe.printStackTrace();
+				}
+			}
+			e.commit();
+
 			Log.d(TAG, "TorrentName: " + contentName);
 			Log.d(TAG, "Files: " + libTorrent().GetTorrentFiles(contentName));
 
@@ -1701,31 +1739,10 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 			libTorrent().SetTorrentFilesPriority(priorities, contentName);
 			File location = new File(savePath, files[biggestFileIndex]);
 			mLocation = "file://" + location.getAbsolutePath();
-			new AsyncTask<Void, Void, Void>() {
-
-				@Override
-				protected Void doInBackground(Void... params) {
-					while (!isFinishing()) {
-						try {
-							Thread.sleep(300);
-						} catch (InterruptedException e) {
-							e.printStackTrace();
-						}
-						publishProgress();
-					}
-					return null;
-				}
-
-				@Override
-				protected void onProgressUpdate(Void... values) {
-					super.onProgressUpdate(values);
-					setOverlayProgress();
-				}
-			};// .execute();
 			while (!location.exists()) {
 				try {
 					Thread.sleep(300);
-				} catch (InterruptedException e) {
+				} catch (InterruptedException ie) {
 					Log.d(TAG, "================ Doesnt Exist Yet");
 				}
 			}
@@ -1734,53 +1751,118 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 
 		mSurface.setKeepScreenOn(true);
 
+		Log.v("TRIBLER_DEBUG", "Start / resume playback: ");
 		/* Start / resume playback */
 		if (dontParse && itemPosition >= 0) {
+			Log.v("TRIBLER_DEBUG", "dontParse && itemPosition >= 0");
 			// Provided externally from AudioService
 			Log.d(TAG, "Continuing playback from AudioService at index "
 					+ itemPosition);
 			savedIndexPosition = itemPosition;
 			if (!mLibVLC.isPlaying()) {
+				Log.v("TRIBLER_DEBUG", "!mLibVLC.isPlaying()");
 				// AudioService-transitioned playback for item after sleep and
 				// resme
 				mLibVLC.playIndex(savedIndexPosition);
 				dontParse = false;
 			}
 		} else if (savedIndexPosition > -1) {
+			Log.v("TRIBLER_DEBUG", "savedIndexPosition > -1");
 			mLibVLC.setMediaList();
 			mLibVLC.playIndex(savedIndexPosition);
 		} else if (mLocation != null && mLocation.length() > 0 && !dontParse) {
+			Log.v("TRIBLER_DEBUG",
+					"mLocation != null && mLocation.length() > 0 && !dontParse");
 			mLibVLC.setMediaList();
 			mLibVLC.getMediaList().add(mLocation, false);
+
 			savedIndexPosition = mLibVLC.getMediaList().size() - 1;
+			Log.v("TRIBLER_DEBUG", "savedIndexPosition = " + savedIndexPosition);
 			mLibVLC.playIndex(savedIndexPosition);
+
+			new AsyncTask<Void, Void, Void>() {
+				@Override
+				protected Void doInBackground(Void... params) {
+					while (mLibVLC.getLength() < 1) {
+						mLibVLC.getMediaList().remove(savedIndexPosition);
+						mLibVLC.getMediaList().add(mLocation, false);
+
+						savedIndexPosition = mLibVLC.getMediaList().size() - 1;
+						mLibVLC.playIndex(savedIndexPosition);
+						try {
+							Thread.sleep(1000);
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+						Log.e("TRIBLER_DEBUG",
+								mSeekbar.getProgress() + " / "
+										+ mSeekbar.getMax() + " . "
+										+ mLibVLC.getDeblocking() + " - "
+										+ mLibVLC.getLength() + " / "
+										+ mLibVLC.getSpuTrack() + " , "
+										+ mLibVLC.getTime() + " - "
+										+ mLibVLC.getVolume());
+					}
+					Log.e("TRIBLER_DEBUG",
+							mSeekbar.getProgress() + " / " + mSeekbar.getMax()
+									+ " . " + mLibVLC.getDeblocking() + " - "
+									+ mLibVLC.getLength() + " / "
+									+ mLibVLC.getSpuTrack() + " , "
+									+ mLibVLC.getTime() + " - "
+									+ mLibVLC.getVolume());
+					return null;
+				}
+
+				protected void onPostExecute(Void result) {
+					mLibVLC.getMediaList().remove(savedIndexPosition);
+					mLibVLC.getMediaList().add(mLocation, false);
+
+					savedIndexPosition = mLibVLC.getMediaList().size() - 1;
+					mLibVLC.playIndex(savedIndexPosition);
+				};
+
+			}.execute();
+			// TODO TRIBLER: only play after fileEnd is known?
+		} else {
+			Log.v("TRIBLER_DEBUG", "noneOfTheAbove");
 		}
 
+		Log.v("TRIBLER_DEBUG", "SETTING MEDIA");
 		if (mLocation != null && mLocation.length() > 0 && !dontParse) {
+			Log.v("TRIBLER_DEBUG",
+					"mLocation != null && mLocation.length() > 0 && !dontParse");
 			// restore last position
 			SharedPreferences preferences = getSharedPreferences(
 					PreferencesActivity.NAME, MODE_PRIVATE);
 			Media media = MediaDatabase.getInstance(this).getMedia(this,
 					mLocation);
 			if (media != null) {
+				Log.v("TRIBLER_DEBUG", "media != null");
 				// in media library
-				if (media.getTime() > 0 && !fromStart)
+				if (media.getTime() > 0 && !fromStart) {
+					Log.v("TRIBLER_DEBUG", "media.getTime() > 0 && !fromStart");
 					mLibVLC.setTime(media.getTime());
+				}
 
 				mLastAudioTrack = media.getAudioTrack();
 				mLastSpuTrack = media.getSpuTrack();
 			} else {
+				Log.v("TRIBLER_DEBUG", "media == null");
 				// not in media library
 				long rTime = preferences.getLong(
 						PreferencesActivity.VIDEO_RESUME_TIME, -1);
 				SharedPreferences.Editor editor = preferences.edit();
 				editor.putLong(PreferencesActivity.VIDEO_RESUME_TIME, -1);
 				editor.commit();
-				if (rTime > 0)
+				if (rTime > 0) {
+					Log.v("TRIBLER_DEBUG", "rTime > 0");
 					mLibVLC.setTime(rTime);
+				}
 
-				if (intentPosition > 0)
+				if (intentPosition > 0) {
+					Log.v("TRIBLER_DEBUG", "intentPosition > 0");
 					mLibVLC.setTime(intentPosition);
+				}
 			}
 
 			// Subtitles
@@ -1816,7 +1898,10 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 					title = title.substring(0, dotIndex);
 			}
 		} else if (itemTitle != null) {
+			Log.v("TRIBLER_DEBUG", "itemTitle != null");
 			title = itemTitle;
+		} else {
+			Log.v("TRIBLER_DEBUG", "NOTEVENTHAT");
 		}
 		mTitle.setText(title);
 	}

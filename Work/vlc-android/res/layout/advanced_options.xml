@@ -49,6 +49,22 @@
             android:background="@drawable/background_item"
             android:text="@string/subtitle_label"
             android:textAppearance="?android:attr/textAppearanceMedium" />
+
+        <View
+            android:id="@+id/show_debug_divider"
+            android:layout_width="match_parent"
+            android:layout_height="1px"
+            android:background="#8FFF"
+            tools:ignore="PxUsage" />
+
+        <TextView
+            android:id="@+id/show_debug"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_margin="10dp"
+            android:background="@drawable/background_item"
+            android:text="@string/show_debug"
+            android:textAppearance="?android:attr/textAppearanceMedium" />
     </LinearLayout>
 
 </ScrollView>

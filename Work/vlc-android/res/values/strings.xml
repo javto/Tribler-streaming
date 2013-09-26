@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
     
-    <string name="app_name" translatable="false">Tribler\'s Video on Demand</string>
+    <string name="app_name" translatable="false">Tribler Streaming</string>
     <string name="btn_select_torrent">Select a Torrent</string>
 
     <!-- Main VLC Interface -->
@@ -383,5 +383,9 @@
         <item>RGB 16-bit</item>
         <item>YUV</item>
     </string-array>
+    
+    <!-- TRIBLER -->
+    <string name="show_debug">Toggle download debug</string>
+    
 
 </resources>
