@@ -96,4 +96,9 @@ public class LibTorrent {
     // result MB
     public native long GetTorrentSize(String TorrentFile);
     //-----------------------------------------------------------------------------
+    public native int[] GetPiecePriorities(String ContentFile);
+    //-----------------------------------------------------------------------------
+    // set the piece priorities
+    public native boolean SetPiecePriorities(String ContentFile, int[] Priorities);
+    //-----------------------------------------------------------------------------
 }
