@@ -1,4 +1,3 @@
-
 ## Bittorrent video-on-demand streaming for Android
 ### Tribler Streaming
 
@@ -18,12 +17,12 @@ Limitations and ToDo: improve seek behavior, may crash when swarm download to sl
 The first step into building a streaming application, is checking if VLC can
 be compiled for Android and if its source code can be modified. Otherwise, a
 different video decoding framework had to be included in the prototype. VLC
-was already available for Android, as well as its source code1 . Later on, it is
+was already available for Android, as well as its source code. Later on, it is
 necessary to include VLC in the prototype (see Section 16.4). To do this, the
 source code is needed as well as a method to compile it into an application.
 VLC was compiled by following the guide in Appendix B. This guide was made
 by collecting information from different resources over the Internet, including
-the VLC wiki2 and several forums. The guide is also made available on Github
+the VLC wiki and several forums. The guide is also made available on Github
 (see Section 4.3). Now, VLC has been tested to work on the target device and
 can be modified to meet the needs of the prototype.
 
@@ -32,16 +31,16 @@ can be modified to meet the needs of the prototype.
 To build the Libtorrent libraries for Android, the Team first tested its func-
 tionality on Linux. It was easily compiled for Linux in which the Team ran a
 client test to see if a torrent file could be downloaded. Android however, has a
-different compiler, which comes with the Android NDK3 . To compile Libtorrent
+different compiler, which comes with the Android NDK. To compile Libtorrent
 with this compiler was not without errors however. This was due to Libtorrent’s
 dependency on Boost.
 
 ### Boost
 
-This dependency meant that the Boost4 libraries had to be build for Android as
+This dependency meant that the Boost libraries had to be build for Android as
 well. Boost is a popular set of C++ libraries, which include functions such as
 image processing, regular expressions and multi-threading. In the end, a github
-repository5 was used which builds Boost for Android after calling a compile
+repository was used which builds Boost for Android after calling a compile
 script, in which also the version of Boost can be specified.
 
 ### RuTracker
@@ -51,7 +50,7 @@ be compiled with the compiler from the Android NDK. A lot of experimentation
 was done with different versions of Boost, different compile options and different
 versions of Libtorrent, but without satisfactory result. Then Egbert Bouman
 from within the Tribler team came with a tip to look into the simple torrent
-client by the name of: RuTracker6 , short for Russian tracker. This application
+client by the name of: RuTracker , short for Russian tracker. This application
 for Android was open source and used Libtorrent for its download functionality.
 The Libtorrent libraries could then be build with the ndk-build command. The
 few errors still remaining were quickly resolved by changing one of Libtorrent’s
@@ -66,7 +65,7 @@ The application could, at this stage, download a torrent and send the down-
 loaded file to the previously build, and separately installed, VLC for playback.
 The torrent file itself must first be downloaded to the device so it can be se-
 lected in the application. At this stage, this works by using a separately installed
-file-browser, such as ASTRO7 .
+file-browser, such as ASTRO .
 
 
 ### Combining VLC and Libtorrent
