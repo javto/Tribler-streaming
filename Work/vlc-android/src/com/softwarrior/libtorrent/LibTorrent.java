@@ -101,4 +101,6 @@ public class LibTorrent {
     // set the piece priorities
     public native boolean SetPiecePriorities(String ContentFile, int[] Priorities);
     //-----------------------------------------------------------------------------
+    public native boolean HavePiece(String ContenFile, int index);
+    //-----------------------------------------------------------------------------
 }
