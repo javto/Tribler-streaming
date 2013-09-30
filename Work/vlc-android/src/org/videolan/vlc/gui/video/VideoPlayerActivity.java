@@ -33,6 +33,7 @@ import java.lang.reflect.Method;
 import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.Locale;
 import java.util.Map;
 
 import org.videolan.libvlc.EventHandler;
@@ -220,8 +221,8 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 	private String contentName;
 	private long fileLength;
 	private int[] piecePriorities;
-	private int firstPieceIndex;
-	private int lastPieceIndex;
+	private int firstPieceIndex = -1;
+	private int lastPieceIndex = -1;
 
 	private LibTorrent libTorrent() {
 		return ((VLCApplication) getApplication()).getLibTorrent();
@@ -1134,8 +1135,8 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 				setOverlayProgress();
 				mTime.setText(Util.millisToString(progress));
 				showInfo(Util.millisToString(progress));
+				//TODO set firstIncorrectPiece 
 			}
-
 		}
 	};
 
@@ -1835,36 +1836,85 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 			Log.v("TRIBLER_DEBUG", "savedIndexPosition = " + savedIndexPosition);
 			mLibVLC.playIndex(savedIndexPosition);
 
-			// TODO: TRIBLER Wait intil videoLenth is known, and play after
-			/*
-			 * new AsyncTask<Void, Void, Void>() {
-			 * 
-			 * @Override protected Void doInBackground(Void... params) { while
-			 * (mLibVLC.getLength() == 0) {
-			 * mLibVLC.getMediaList().remove(savedIndexPosition);
-			 * mLibVLC.getMediaList().add(mLocation, false);
-			 * 
-			 * savedIndexPosition = mLibVLC.getMediaList().size() - 1; //
-			 * mLibVLC.playIndex(savedIndexPosition); try { Thread.sleep(1000);
-			 * } catch (InterruptedException e) { e.printStackTrace(); }
-			 * Log.e("TRIBLER_DEBUG", mSeekbar.getProgress() + " / " +
-			 * mSeekbar.getMax() + " . " + mLibVLC.getDeblocking() + " - " +
-			 * mLibVLC.getLength() + " / " + mLibVLC.getSpuTrack() + " , " +
-			 * mLibVLC.getTime() + " - " + mLibVLC.getVolume()); }
-			 * Log.e("TRIBLER_DEBUG", mSeekbar.getProgress() + " / " +
-			 * mSeekbar.getMax() + " . " + mLibVLC.getDeblocking() + " - " +
-			 * mLibVLC.getLength() + " / " + mLibVLC.getSpuTrack() + " , " +
-			 * mLibVLC.getTime() + " - " + mLibVLC.getVolume()); return null; }
-			 * 
-			 * protected void onPostExecute(Void result) {
-			 * mLibVLC.getMediaList().remove(savedIndexPosition);
-			 * mLibVLC.getMediaList().add(mLocation, false);
-			 * 
-			 * savedIndexPosition = mLibVLC.getMediaList().size() - 1; load();
-			 * };
-			 * 
-			 * }.execute();
-			 */
+			// TODO: TRIBLER check progress of piece priority: if last 2 are
+			// downloaded, setup libswift priorities. Also start playing.
+			new AsyncTask<Void, Void, Void>() {
+				protected Void doInBackground(Void... params) {
+					boolean startedOnce = false;
+					int firstIncompletePiece = firstPieceIndex == -1 ? 0
+							: firstPieceIndex;
+					while (!isCancelled()) {
+						try {
+							Thread.sleep(1000);
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+						if (firstPieceIndex != -1 && lastPieceIndex != -1) {
+							if (!startedOnce) {
+								Boolean[] downloadedBlocksOfLastPiece = new Boolean[] {
+										true, false };
+								Boolean[] downloadedBlocksOfBeforeLastPiece = new Boolean[] {
+										true, false };
+								// TODO calculate last and beforelast
+								// percentage;
+								int progressOfLastTwoPieces = 70;
+								if (progressOfLastTwoPieces > 80) {
+									// TODO make sure mLbVlc plays mLocation
+									startedOnce = true;
+									mEndReached = false;
+									// mLibVLC.getMediaList().remove(
+									// savedIndexPosition);
+									// mLibVLC.getMediaList()
+									// .add(mLocation, false);
+									//
+									// savedIndexPosition =
+									// mLibVLC.getMediaList()
+									// .size() - 1; //
+									// mLibVLC.playIndex(savedIndexPosition);
+									onResume();
+								}
+							}
+							if (startedOnce) {
+								// TODO make sure that the maxpriority is given
+								// to the 20 first pieces, starting from the
+								// first that hasn't been completely downloaded
+								// yet.
+								int highPrioPieces = 15;
+								int mediumPrioPieces = 30;
+								boolean foundFirst = false;
+								for (int i = firstIncompletePiece; i < piecePriorities.length; i++) {
+									if (!foundFirst) {
+										// TODO get status of piece[i]
+										int numberOfBlocksToDownload = 0;
+										if (numberOfBlocksToDownload != 0) {
+											foundFirst = true;
+											firstIncompletePiece = i;
+										}
+									}
+									if (foundFirst) {
+										if (i < firstIncompletePiece
+												+ highPrioPieces) {
+											piecePriorities[i] = FilePriority.MAXPRIORITY
+													.ordinal();
+										} else if (i < firstIncompletePiece
+												+ highPrioPieces
+												+ mediumPrioPieces) {
+											piecePriorities[i] = FilePriority.NORMAL
+													.ordinal();
+										} else {
+											break;
+										}
+									}
+								}
+							}
+							// TODO check if last one gets checked.
+							if (firstIncompletePiece == piecePriorities.length)
+								cancel(true);
+						}
+					}
+					return null;
+				};
+			}.execute();
 		}
 
 		Log.v("TRIBLER_DEBUG", "SETTING MEDIA");
@@ -1942,7 +1992,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 	}
 
 	private long getSize(String sizeString) {
-		sizeString = sizeString.toLowerCase();
+		sizeString = sizeString.toLowerCase(Locale.ENGLISH);
 		Log.v(TAG, "getSize(" + sizeString + ")");
 		long res = 0;
 		int factor = 1;
