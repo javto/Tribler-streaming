@@ -101,8 +101,14 @@ public class LibTorrent {
     // set the piece priorities
     public native boolean SetPiecePriorities(String ContentFile, int[] Priorities);
     //-----------------------------------------------------------------------------
-    public native boolean HavePiece(String ContenFile, int index);
+    public native boolean HavePiece(String ContentFile, int index);
     //-----------------------------------------------------------------------------
-    public native boolean[] GetBlocksForPiece(String ContenFile, int index);
+    public native boolean[] GetBlocksForPiece(String ContentFile, int PieceIndex);
+    //-----------------------------------------------------------------------------
+    //piece size for the index piece in bytes (all the same except the last)
+    public native boolean[] GetPieceSize(String ContentFile, int PieceIndex);
+    //-----------------------------------------------------------------------------
+    //Total progress size in bytes
+    public native boolean[] GetProgressSize(String ContentFile);
     //-----------------------------------------------------------------------------
 }
