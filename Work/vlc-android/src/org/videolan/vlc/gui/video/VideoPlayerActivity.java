@@ -219,6 +219,9 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 	private boolean torrentFile;
 	private String contentName;
 	private long fileLength;
+	private int[] piecePriorities;
+	private int firstPieceIndex;
+	private int lastPieceIndex;
 
 	private LibTorrent libTorrent() {
 		return ((VLCApplication) getApplication()).getLibTorrent();
@@ -1499,7 +1502,8 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 
 		// Update all view elements
 		mControls.setSeekable(length > 0);
-		mSeekbar.setMax(length);
+		// TRIBLER
+		mSeekbar.setMax(length == 0 ? (int) fileLength : length);
 		mSeekbar.setProgress(time);
 		mSysTime.setText(DateFormat.getTimeFormat(this).format(
 				new Date(System.currentTimeMillis())));
@@ -1677,7 +1681,6 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 					StorageModes.ALLOCATE.ordinal());
 
 			// Delete previous torrent cache
-
 			contentName = libTorrent().GetTorrentName(mLocation);
 			String contentNameDir = new File(savePath, contentName)
 					.getAbsolutePath();
@@ -1701,7 +1704,6 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 			e.commit();
 
 			// DFind biggest file, so you can play it.
-
 			String[] files = libTorrent().GetTorrentFiles(contentName).split(
 					"\\r?\\n");
 			long[] sizes = new long[files.length];
@@ -1726,7 +1728,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 							.getByte();
 					fileLength = sizes[i];
 					biggestFileIndex = i;
-					priorities[biggestFileIndex] = FilePriority.MAXPRIORITY
+					priorities[biggestFileIndex] = FilePriority.NORMAL
 							.getByte();
 				} else {
 					priorities[i] = FilePriority.DONTDOWNLOAD.getByte();
@@ -1751,6 +1753,58 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 				}
 			}
 			Log.d(TAG, "!!!!!!!!!! Exists !!!!!!!!!!!!");
+			piecePriorities = libTorrent().GetPiecePriorities(contentName);
+			firstPieceIndex = -1;
+			lastPieceIndex = -1;
+			int firstNumberOfPieces = 18; // 20 pieces minus latest file 2
+											// pieces
+			String p = "";
+			for (int i : piecePriorities) {
+				p += "" + i;
+			}
+			Log.v(TAG, "PRIOSBEFORE: " + p);
+
+			for (int i = 0; i < piecePriorities.length; i++) {
+				if (piecePriorities[i] != 0) {
+					// We'ŕe in the file to download
+					if (firstPieceIndex == -1)
+						// Found the first piece
+						firstPieceIndex = i;
+					if (i < firstPieceIndex + firstNumberOfPieces) {
+						piecePriorities[i] = FilePriority.NORMAL.ordinal();
+					} else {
+						piecePriorities[i] = FilePriority.DONTDOWNLOAD
+								.ordinal();
+					}
+				} else {
+					// We'ŕe either before or after the file to download
+					if (firstPieceIndex != -1)
+						// After firstPiece
+						if (lastPieceIndex == -1)
+							lastPieceIndex = i - 1;
+					piecePriorities[i] = FilePriority.DONTDOWNLOAD.ordinal();
+				}
+			}
+			if (lastPieceIndex == -1)
+				lastPieceIndex = piecePriorities.length - 1;
+			if (lastPieceIndex > -1)
+				piecePriorities[lastPieceIndex] = FilePriority.MAXPRIORITY
+						.ordinal();
+			if (lastPieceIndex - 1 > -1)
+				piecePriorities[lastPieceIndex - 1] = FilePriority.MAXPRIORITY
+						.ordinal();
+
+			Log.d(TAG, "LatestPiece Index: " + lastPieceIndex + " / "
+					+ (piecePriorities.length - 1));
+
+			String prios = "firstPiece: " + firstPieceIndex + "\n";
+			for (int i : piecePriorities) {
+				prios += "" + i;
+			}
+			Log.v(TAG, "PRIOSAFTER: " + prios + "\nLastpieceIndex "
+					+ lastPieceIndex);
+
+			libTorrent().SetPiecePriorities(contentName, piecePriorities);
 		}
 
 		mSurface.setKeepScreenOn(true);
@@ -1781,49 +1835,36 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 			Log.v("TRIBLER_DEBUG", "savedIndexPosition = " + savedIndexPosition);
 			mLibVLC.playIndex(savedIndexPosition);
 
-			// TODO: Wait intil videoLenth is known, and play after
-			new AsyncTask<Void, Void, Void>() {
-				@Override
-				protected Void doInBackground(Void... params) {
-					while (mLibVLC.getLength() < 1) {
-						mLibVLC.getMediaList().remove(savedIndexPosition);
-						mLibVLC.getMediaList().add(mLocation, false);
-
-						savedIndexPosition = mLibVLC.getMediaList().size() - 1;
-						// mLibVLC.playIndex(savedIndexPosition);
-						try {
-							Thread.sleep(1000);
-						} catch (InterruptedException e) {
-							e.printStackTrace();
-						}
-						Log.e("TRIBLER_DEBUG",
-								mSeekbar.getProgress() + " / "
-										+ mSeekbar.getMax() + " . "
-										+ mLibVLC.getDeblocking() + " - "
-										+ mLibVLC.getLength() + " / "
-										+ mLibVLC.getSpuTrack() + " , "
-										+ mLibVLC.getTime() + " - "
-										+ mLibVLC.getVolume());
-					}
-					Log.e("TRIBLER_DEBUG",
-							mSeekbar.getProgress() + " / " + mSeekbar.getMax()
-									+ " . " + mLibVLC.getDeblocking() + " - "
-									+ mLibVLC.getLength() + " / "
-									+ mLibVLC.getSpuTrack() + " , "
-									+ mLibVLC.getTime() + " - "
-									+ mLibVLC.getVolume());
-					return null;
-				}
-
-				protected void onPostExecute(Void result) {
-					mLibVLC.getMediaList().remove(savedIndexPosition);
-					mLibVLC.getMediaList().add(mLocation, false);
-
-					savedIndexPosition = mLibVLC.getMediaList().size() - 1;
-					mLibVLC.playIndex(savedIndexPosition);
-				};
-
-			}.execute();
+			// TODO: TRIBLER Wait intil videoLenth is known, and play after
+			/*
+			 * new AsyncTask<Void, Void, Void>() {
+			 * 
+			 * @Override protected Void doInBackground(Void... params) { while
+			 * (mLibVLC.getLength() == 0) {
+			 * mLibVLC.getMediaList().remove(savedIndexPosition);
+			 * mLibVLC.getMediaList().add(mLocation, false);
+			 * 
+			 * savedIndexPosition = mLibVLC.getMediaList().size() - 1; //
+			 * mLibVLC.playIndex(savedIndexPosition); try { Thread.sleep(1000);
+			 * } catch (InterruptedException e) { e.printStackTrace(); }
+			 * Log.e("TRIBLER_DEBUG", mSeekbar.getProgress() + " / " +
+			 * mSeekbar.getMax() + " . " + mLibVLC.getDeblocking() + " - " +
+			 * mLibVLC.getLength() + " / " + mLibVLC.getSpuTrack() + " , " +
+			 * mLibVLC.getTime() + " - " + mLibVLC.getVolume()); }
+			 * Log.e("TRIBLER_DEBUG", mSeekbar.getProgress() + " / " +
+			 * mSeekbar.getMax() + " . " + mLibVLC.getDeblocking() + " - " +
+			 * mLibVLC.getLength() + " / " + mLibVLC.getSpuTrack() + " , " +
+			 * mLibVLC.getTime() + " - " + mLibVLC.getVolume()); return null; }
+			 * 
+			 * protected void onPostExecute(Void result) {
+			 * mLibVLC.getMediaList().remove(savedIndexPosition);
+			 * mLibVLC.getMediaList().add(mLocation, false);
+			 * 
+			 * savedIndexPosition = mLibVLC.getMediaList().size() - 1; load();
+			 * };
+			 * 
+			 * }.execute();
+			 */
 		}
 
 		Log.v("TRIBLER_DEBUG", "SETTING MEDIA");
