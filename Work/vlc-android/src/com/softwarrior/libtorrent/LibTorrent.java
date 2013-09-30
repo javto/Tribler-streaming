@@ -106,9 +106,9 @@ public class LibTorrent {
     public native boolean[] GetBlocksForPiece(String ContentFile, int PieceIndex);
     //-----------------------------------------------------------------------------
     //piece size for the index piece in bytes (all the same except the last)
-    public native boolean[] GetPieceSize(String ContentFile, int PieceIndex);
+    public native long GetPieceSize(String ContentFile, int PieceIndex);
     //-----------------------------------------------------------------------------
     //Total progress size in bytes
-    public native boolean[] GetProgressSize(String ContentFile);
+    public native long GetProgressSize(String ContentFile);
     //-----------------------------------------------------------------------------
 }
