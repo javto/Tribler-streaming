@@ -103,4 +103,6 @@ public class LibTorrent {
     //-----------------------------------------------------------------------------
     public native boolean HavePiece(String ContenFile, int index);
     //-----------------------------------------------------------------------------
+    public native boolean[] GetBlocksForPiece(String ContenFile, int index);
+    //-----------------------------------------------------------------------------
 }
