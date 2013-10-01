@@ -223,6 +223,8 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 	private int[] piecePriorities;
 	private int firstPieceIndex = -1;
 	private int lastPieceIndex = -1;
+	public boolean initCompleted;
+	private boolean showDebugOnStart = true;
 
 	private LibTorrent libTorrent() {
 		return ((VLCApplication) getApplication()).getLibTorrent();
@@ -235,6 +237,8 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 		setContentView(R.layout.player);
 
 		// TRIBLER INIT
+		findViewById(R.id.libtorrent_debug).setVisibility(
+				showDebugOnStart ? View.VISIBLE : View.GONE);
 		libTorrent();
 
 		SharedPreferences pref = PreferenceManager
@@ -741,7 +745,9 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 			switch (msg.getData().getInt("event")) {
 			case EventHandler.MediaPlayerPlaying:
 				Log.i(TAG, "MediaPlayerPlaying");
-				activity.setESTracks();
+				// TRIBLER
+				if (activity.initCompleted)
+					activity.setESTracks();
 				break;
 			case EventHandler.MediaPlayerPaused:
 				Log.i(TAG, "MediaPlayerPaused");
@@ -826,6 +832,8 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 				}
 			}, 1000);
 		} else if (torrentFile) {
+			mEndReached = false;
+			initCompleted = false;
 			// TRIBLER
 		} else {
 			/* Exit player when reaching the end */
@@ -1430,7 +1438,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 		// mHandler.removeMessages(FADE_OUT);
 		// mHandler.sendMessageDelayed(msg, timeout);
 		// }
-		updateOverlayPausePlay();
+		// updateOverlayPausePlay();
 	}
 
 	/**
@@ -1486,8 +1494,12 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 		if (mLibVLC == null) {
 			return;
 		}
-
-		mControls.setState(mLibVLC.isPlaying());
+		// TRIBLER
+		if (initCompleted)
+			mControls.setState(mLibVLC.isPlaying());
+		// TRIBLER
+		else
+			mControls.setState(false);
 	}
 
 	/**
@@ -1533,7 +1545,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 			// Log.v(TAG, "MAX: " + max + " | SIZE: " + sizeMB + " | progress: "
 			// + progress);
 			mSeekbar.setSecondaryProgress(progress);
-			((TextView) findViewById(R.id.debug_libtorrent))
+			((TextView) findViewById(R.id.libtorrent_debug))
 					.setText(libTorrent().GetTorrentStatusText(contentName)
 							+ "\n"
 							+ libTorrent().GetTorrentProgressSize(contentName)
@@ -1759,58 +1771,61 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 				}
 			}
 			Log.d(TAG, "!!!!!!!!!! Exists !!!!!!!!!!!!");
-			piecePriorities = libTorrent().GetPiecePriorities(contentName);
-			firstPieceIndex = -1;
-			lastPieceIndex = -1;
-			int firstNumberOfPieces = 18; // 20 pieces minus latest file 2
-											// pieces
-			String p = "";
-			for (int i : piecePriorities) {
-				p += "" + i;
-			}
-			Log.v(TAG, "PRIOSBEFORE: " + p);
+			if (!initCompleted) {
+				piecePriorities = libTorrent().GetPiecePriorities(contentName);
+				firstPieceIndex = -1;
+				lastPieceIndex = -1;
+				int firstNumberOfPieces = 18; // 20 pieces minus latest file 2
+												// pieces
+				String p = "";
+				for (int i : piecePriorities) {
+					p += "" + i;
+				}
+				Log.v(TAG, "PRIOSBEFORE: " + p);
 
-			for (int i = 0; i < piecePriorities.length; i++) {
-				if (piecePriorities[i] != 0) {
-					// We'ŕe in the file to download
-					if (firstPieceIndex == -1)
-						// Found the first piece
-						firstPieceIndex = i;
-					if (i < firstPieceIndex + firstNumberOfPieces) {
-						piecePriorities[i] = FilePriority.NORMAL.ordinal();
+				for (int i = 0; i < piecePriorities.length; i++) {
+					if (piecePriorities[i] != 0) {
+						// We'ŕe in the file to download
+						if (firstPieceIndex == -1)
+							// Found the first piece
+							firstPieceIndex = i;
+						if (i < firstPieceIndex + firstNumberOfPieces) {
+							piecePriorities[i] = FilePriority.NORMAL.ordinal();
+						} else {
+							piecePriorities[i] = FilePriority.DONTDOWNLOAD
+									.ordinal();
+						}
 					} else {
+						// We'ŕe either before or after the file to download
+						if (firstPieceIndex != -1)
+							// After firstPiece
+							if (lastPieceIndex == -1)
+								lastPieceIndex = i - 1;
 						piecePriorities[i] = FilePriority.DONTDOWNLOAD
 								.ordinal();
 					}
-				} else {
-					// We'ŕe either before or after the file to download
-					if (firstPieceIndex != -1)
-						// After firstPiece
-						if (lastPieceIndex == -1)
-							lastPieceIndex = i - 1;
-					piecePriorities[i] = FilePriority.DONTDOWNLOAD.ordinal();
 				}
+				if (lastPieceIndex == -1)
+					lastPieceIndex = piecePriorities.length - 1;
+				if (lastPieceIndex > -1)
+					piecePriorities[lastPieceIndex] = FilePriority.MAXPRIORITY
+							.ordinal();
+				if (lastPieceIndex - 1 > -1)
+					piecePriorities[lastPieceIndex - 1] = FilePriority.MAXPRIORITY
+							.ordinal();
+
+				Log.d(TAG, "LatestPiece Index: " + lastPieceIndex + " / "
+						+ (piecePriorities.length - 1));
+
+				String prios = "firstPiece: " + firstPieceIndex + "\n";
+				for (int i : piecePriorities) {
+					prios += "" + i;
+				}
+				Log.v(TAG, "PRIOSAFTER: " + prios + "\nLastpieceIndex "
+						+ lastPieceIndex);
+
+				libTorrent().SetPiecePriorities(contentName, piecePriorities);
 			}
-			if (lastPieceIndex == -1)
-				lastPieceIndex = piecePriorities.length - 1;
-			if (lastPieceIndex > -1)
-				piecePriorities[lastPieceIndex] = FilePriority.MAXPRIORITY
-						.ordinal();
-			if (lastPieceIndex - 1 > -1)
-				piecePriorities[lastPieceIndex - 1] = FilePriority.MAXPRIORITY
-						.ordinal();
-
-			Log.d(TAG, "LatestPiece Index: " + lastPieceIndex + " / "
-					+ (piecePriorities.length - 1));
-
-			String prios = "firstPiece: " + firstPieceIndex + "\n";
-			for (int i : piecePriorities) {
-				prios += "" + i;
-			}
-			Log.v(TAG, "PRIOSAFTER: " + prios + "\nLastpieceIndex "
-					+ lastPieceIndex);
-
-			libTorrent().SetPiecePriorities(contentName, piecePriorities);
 		}
 
 		mSurface.setKeepScreenOn(true);
@@ -1841,50 +1856,57 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 			Log.v("TRIBLER_DEBUG", "savedIndexPosition = " + savedIndexPosition);
 			mLibVLC.playIndex(savedIndexPosition);
 
-			// TODO: TRIBLER check progress of piece priority: if last 2 are
-			// downloaded, setup libswift priorities. Also start playing.
-			new AsyncTask<Void, Void, Void>() {
-				protected Void doInBackground(Void... params) {
-					boolean startedOnce = false;
-					while (!isCancelled()) {
-						mLibVLC.pause();
-						try {
-							Thread.sleep(1000);
-						} catch (InterruptedException e) {
-							e.printStackTrace();
-						}
-						if (firstPieceIndex != -1 && lastPieceIndex != -1) {
-							if (!startedOnce) {
-								long progressSize = libTorrent()
-										.GetProgressSize(contentName);
-								long totalAskedSize = (libTorrent()
-										.GetPieceSize(contentName,
-												firstPieceIndex) * 19)
-										+ libTorrent().GetPieceSize(
-												contentName, lastPieceIndex);
-								double magicTargetRatio = 0.95;
-								double ratio = (double) progressSize
-										/ totalAskedSize;
-								if (ratio >= magicTargetRatio) {
-									// TODO make sure mLbVlc plays mLocation
-									startedOnce = true;
-									mEndReached = false;
-									// mLibVLC.getMediaList().remove(
-									// savedIndexPosition);
-									// mLibVLC.getMediaList()
-									// .add(mLocation, false);
-									//
-									// savedIndexPosition =
-									// mLibVLC.getMediaList()
-									// .size() - 1; //
-									// mLibVLC.playIndex(savedIndexPosition);
+			if (!initCompleted)
+				// TODO: TRIBLER check progress of piece priority: if last 2 are
+				// downloaded, setup libswift priorities. Also start playing.
+				new AsyncTask<Void, Void, Void>() {
+					@Override
+					protected Void doInBackground(Void... params) {
 
-									// onPause() ??
-									publishProgress();
-									cancel(true);
-								}
+						boolean startedOnce = false;
+						while (!isCancelled()) {
+							Log.d(TAG, "InitCompletedcheckthread");
+							if (mLibVLC.getLength() > 0) {
+								return null;
 							}
-							if (startedOnce) {
+							try {
+								Thread.sleep(1000);
+							} catch (InterruptedException e) {
+								e.printStackTrace();
+							}
+							if (firstPieceIndex != -1 && lastPieceIndex != -1) {
+								if (!startedOnce) {
+									long progressSize = libTorrent()
+											.GetProgressSize(contentName);
+									long totalAskedSize = (libTorrent()
+											.GetPieceSize(contentName,
+													firstPieceIndex) * 19)
+											+ libTorrent()
+													.GetPieceSize(contentName,
+															lastPieceIndex);
+									double magicTargetRatio = 0.95;
+									double ratio = (double) progressSize
+											/ totalAskedSize;
+									if (ratio >= magicTargetRatio) {
+										// TODO make sure mLbVlc plays mLocation
+										startedOnce = true;
+										mEndReached = false;
+										// mLibVLC.getMediaList().remove(
+										// savedIndexPosition);
+										// mLibVLC.getMediaList()
+										// .add(mLocation, false);
+										//
+										// savedIndexPosition =
+										// mLibVLC.getMediaList()
+										// .size() - 1; //
+										// mLibVLC.playIndex(savedIndexPosition);
+
+										// onPause() ??
+										// publishProgress();
+										return null;
+									}
+								}
+								// if (startedOnce) {
 								// TODO make sure that the maxpriority is given
 								// to the 20 first pieces, starting from the
 								// first that hasn't been completely downloaded
@@ -1920,28 +1942,54 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 								// }
 								// }
 								// }
-
-								for (int i = firstPieceIndex; i <= lastPieceIndex; i++) {
-									piecePriorities[i] = FilePriority.NORMAL
-											.ordinal();
-								}
-								libTorrent().SetPiecePriorities(contentName,
-										piecePriorities);
+								//
+								// String prios = "firstPiece: " +
+								// firstPieceIndex
+								// + "\n";
+								// for (int i : piecePriorities) {
+								// prios += "" + i;
+								// }
+								// Log.v(TAG, "PRIOSBEFORE: " + prios
+								// + "\nLastpieceIndex " + lastPieceIndex);
+								//
+								// }
+								// TODO check if last one gets checked.
+								// if (firstIncompletePiece ==
+								// piecePriorities.length)
+								// cancel(true);
 							}
-							// TODO check if last one gets checked.
-							// if (firstIncompletePiece ==
-							// piecePriorities.length)
-							// cancel(true);
 						}
+						return null;
 					}
-					return null;
-				}
 
-				protected void onProgressUpdate(Void... values) {
-					onTriblerResume();
-				};
+					// @Override
+					// protected void onProgressUpdate(Void... values) {
+					//
+					// };
 
-			}.execute();
+					@Override
+					protected void onPostExecute(Void result) {
+						Log.v(TAG, "onPostExecute");
+						findViewById(R.id.libtorrent_loading).setVisibility(
+								View.GONE);
+
+						for (int i = 0; i < piecePriorities.length; i++) {
+							piecePriorities[i] = FilePriority.NORMAL.ordinal();
+						}
+						String prios = "firstPiece: " + firstPieceIndex + "\n";
+						for (int i : piecePriorities) {
+							prios += "" + i;
+						}
+						Log.v(TAG, "PRIOSAFTER: " + prios + "\nLastpieceIndex "
+								+ lastPieceIndex);
+						libTorrent().SetPiecePriorities(contentName,
+								piecePriorities);
+						initCompleted = true;
+						libTorrent().ResumeTorrent(contentName);
+						onTriblerResume();
+					}
+
+				}.execute();
 		}
 
 		Log.v("TRIBLER_DEBUG", "SETTING MEDIA");

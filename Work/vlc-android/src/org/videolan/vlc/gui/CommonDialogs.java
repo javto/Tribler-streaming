@@ -120,12 +120,13 @@ public class CommonDialogs {
 			}
 		}
 
+		// TRIBLER
 		TextView toggleDebug = (TextView) view.findViewById(R.id.show_debug);
 		toggleDebug.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
 				TextView debug = (TextView) context
-						.findViewById(R.id.debug_libtorrent);
+						.findViewById(R.id.libtorrent_debug);
 				if (debug != null) {
 					boolean isVisible = debug.getVisibility() == View.VISIBLE;
 					debug.setVisibility(isVisible ? View.INVISIBLE
