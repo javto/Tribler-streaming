@@ -213,12 +213,37 @@
         </LinearLayout>
     </RelativeLayout>
 
-    <TextView
-        android:id="@+id/debug_libtorrent"
-        android:layout_width="wrap_content"
-        android:padding="8dp"
+    <RelativeLayout
+        android:id="@+id/libtorrent_loading"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
         android:background="#80000000"
+        android:clickable="true" >
+
+        <ProgressBar
+            android:id="@+id/libtorrent_progressbar"
+            style="?android:attr/progressBarStyleLarge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true" />
+
+        <TextView
+            android:id="@+id/libtorrent_progress_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_above="@+id/libtorrent_progressbar"
+            android:layout_centerHorizontal="true"
+            android:text="Loading..."
+            android:textAppearance="?android:attr/textAppearanceMedium"
+            android:textColor="@android:color/white" />
+    </RelativeLayout>
+
+    <TextView
+        android:id="@+id/libtorrent_debug"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="20dp" />
+        android:layout_marginTop="20dp"
+        android:background="#80000000"
+        android:padding="8dp" />
 
 </RelativeLayout>
