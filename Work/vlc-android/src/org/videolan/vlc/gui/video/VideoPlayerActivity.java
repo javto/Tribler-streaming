@@ -471,6 +471,11 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 	@Override
 	protected void onResume() {
 		super.onResume();
+		onTriblerResume();
+	}
+
+	// TRIBLER
+	private void onTriblerResume() {
 		AudioServiceController.getInstance().bindAudioService(this);
 
 		load();
@@ -1135,7 +1140,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 				setOverlayProgress();
 				mTime.setText(Util.millisToString(progress));
 				showInfo(Util.millisToString(progress));
-				//TODO set firstIncorrectPiece 
+				// TODO set firstIncorrectPiece
 			}
 		}
 	};
@@ -1819,7 +1824,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 			savedIndexPosition = itemPosition;
 			if (!mLibVLC.isPlaying()) {
 				// AudioService-transitioned playback for item after sleep and
-				// resme
+				// resume
 				mLibVLC.playIndex(savedIndexPosition);
 				dontParse = false;
 			}
@@ -1841,9 +1846,8 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 			new AsyncTask<Void, Void, Void>() {
 				protected Void doInBackground(Void... params) {
 					boolean startedOnce = false;
-					int firstIncompletePiece = firstPieceIndex == -1 ? 0
-							: firstPieceIndex;
 					while (!isCancelled()) {
+						mLibVLC.pause();
 						try {
 							Thread.sleep(1000);
 						} catch (InterruptedException e) {
@@ -1851,14 +1855,17 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 						}
 						if (firstPieceIndex != -1 && lastPieceIndex != -1) {
 							if (!startedOnce) {
-								Boolean[] downloadedBlocksOfLastPiece = new Boolean[] {
-										true, false };
-								Boolean[] downloadedBlocksOfBeforeLastPiece = new Boolean[] {
-										true, false };
-								// TODO calculate last and beforelast
-								// percentage;
-								int progressOfLastTwoPieces = 70;
-								if (progressOfLastTwoPieces > 80) {
+								long progressSize = libTorrent()
+										.GetProgressSize(contentName);
+								long totalAskedSize = (libTorrent()
+										.GetPieceSize(contentName,
+												firstPieceIndex) * 19)
+										+ libTorrent().GetPieceSize(
+												contentName, lastPieceIndex);
+								double magicTargetRatio = 0.95;
+								double ratio = (double) progressSize
+										/ totalAskedSize;
+								if (ratio >= magicTargetRatio) {
 									// TODO make sure mLbVlc plays mLocation
 									startedOnce = true;
 									mEndReached = false;
@@ -1871,7 +1878,10 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 									// mLibVLC.getMediaList()
 									// .size() - 1; //
 									// mLibVLC.playIndex(savedIndexPosition);
-									onResume();
+
+									// onPause() ??
+									publishProgress();
+									cancel(true);
 								}
 							}
 							if (startedOnce) {
@@ -1879,41 +1889,58 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 								// to the 20 first pieces, starting from the
 								// first that hasn't been completely downloaded
 								// yet.
-								int highPrioPieces = 15;
-								int mediumPrioPieces = 30;
-								boolean foundFirst = false;
-								for (int i = firstIncompletePiece; i < piecePriorities.length; i++) {
-									if (!foundFirst) {
-										// TODO get status of piece[i]
-										int numberOfBlocksToDownload = 0;
-										if (numberOfBlocksToDownload != 0) {
-											foundFirst = true;
-											firstIncompletePiece = i;
-										}
-									}
-									if (foundFirst) {
-										if (i < firstIncompletePiece
-												+ highPrioPieces) {
-											piecePriorities[i] = FilePriority.MAXPRIORITY
-													.ordinal();
-										} else if (i < firstIncompletePiece
-												+ highPrioPieces
-												+ mediumPrioPieces) {
-											piecePriorities[i] = FilePriority.NORMAL
-													.ordinal();
-										} else {
-											break;
-										}
-									}
+
+								// int highPrioPieces = 15;
+								// int mediumPrioPieces = 30;
+								// boolean foundFirst = false;
+								//
+								//
+								// for (int i = firstIncompletePiece; i <
+								// piecePriorities.length; i++) {
+								// if (!foundFirst) {
+								// // TODO get status of piece[i]
+								// int numberOfBlocksToDownload = 0;
+								// if (numberOfBlocksToDownload != 0) {
+								// foundFirst = true;
+								// firstIncompletePiece = i;
+								// }
+								// }
+								// if (foundFirst) {
+								// if (i < firstIncompletePiece
+								// + highPrioPieces) {
+								// piecePriorities[i] = FilePriority.MAXPRIORITY
+								// .ordinal();
+								// } else if (i < firstIncompletePiece
+								// + highPrioPieces
+								// + mediumPrioPieces) {
+								// piecePriorities[i] = FilePriority.NORMAL
+								// .ordinal();
+								// } else {
+								// break;
+								// }
+								// }
+								// }
+
+								for (int i = firstPieceIndex; i <= lastPieceIndex; i++) {
+									piecePriorities[i] = FilePriority.NORMAL
+											.ordinal();
 								}
+								libTorrent().SetPiecePriorities(contentName,
+										piecePriorities);
 							}
 							// TODO check if last one gets checked.
-							if (firstIncompletePiece == piecePriorities.length)
-								cancel(true);
+							// if (firstIncompletePiece ==
+							// piecePriorities.length)
+							// cancel(true);
 						}
 					}
 					return null;
+				}
+
+				protected void onProgressUpdate(Void... values) {
+					onTriblerResume();
 				};
+
 			}.execute();
 		}
 
