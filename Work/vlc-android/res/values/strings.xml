@@ -386,6 +386,9 @@
     
     <!-- TRIBLER -->
     <string name="show_debug">Toggle download debug</string>
+    <string name="invisible">for internal use only</string>
+    <string name="enable_libtorrent_debug_summary">enable to see information about download</string>
+    <string name="enable_libtorrent_debug">Libtorrent Debug</string>
     
 
 </resources>

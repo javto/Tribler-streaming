@@ -26,6 +26,7 @@ import java.net.URISyntaxException;
 
 import org.videolan.vlc.VLCApplication;
 import org.videolan.vlc.VlcRunnable;
+import org.videolan.vlc.gui.video.VideoPlayerActivity;
 import org.videolan.vlc.interfaces.OnExpandableListener;
 import org.videolan.vlc.widget.ExpandableLayout;
 
@@ -36,8 +37,11 @@ import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
 import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.ContextThemeWrapper;
 import android.view.Gravity;
@@ -131,6 +135,13 @@ public class CommonDialogs {
 					boolean isVisible = debug.getVisibility() == View.VISIBLE;
 					debug.setVisibility(isVisible ? View.INVISIBLE
 							: View.VISIBLE);
+					
+					//change preference to debug on or off
+					isVisible = debug.getVisibility() == View.VISIBLE;
+					SharedPreferences prefs = context.getSharedPreferences("VlcSharedPreferences", 0);
+					SharedPreferences.Editor editor = prefs.edit();
+					editor.putBoolean("enable_libtorrent_debug", (isVisible ? true : false));
+					editor.commit();
 				}
 			}
 		});

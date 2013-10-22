@@ -107,6 +107,12 @@
                 android:title="@string/network_caching"
                 android:defaultValue=""
                 android:maxLength="5" />
+            
+            <CheckBoxPreference
+            	android:defaultValue="true"
+            	android:key="enable_libtorrent_debug"
+            	android:summary="@string/enable_libtorrent_debug_summary"
+            	android:title="@string/enable_libtorrent_debug" />
 
             <EditTextPreference
                 android:defaultValue=""
@@ -119,6 +125,6 @@
                 android:key="quit_app"
                 android:title="@string/quit" />
         </PreferenceScreen>
+        
     </PreferenceCategory>
-
 </PreferenceScreen>
