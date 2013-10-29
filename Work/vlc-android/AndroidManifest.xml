@@ -99,6 +99,17 @@
                 <data android:scheme="file" />
                 <data android:mimeType="*/*" />
                 <data android:pathPattern=".*\\.torrent" />
+            	<data android:pathPattern=".*\\..*\\.torrent"/>
+            	<data android:pathPattern=".*\\..*\\..*\\.torrent"/>
+            	<data android:pathPattern=".*\\..*\\..*\\..*\\.torrent"/>
+            	<data android:pathPattern=".*\\..*\\..*\\..*\\..*\\.torrent"/>
+            	<data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\.torrent"/>
+            	<data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\..*\\.torrent"/>
+            	<data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\..*\\..*\\.torrent"/>
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\..*\\..*\\..*\\.torrent"/>
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\..*\\..*\\..*\\..*\\.torrent"/>
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\..*\\..*\\..*\\..*\\..*\\.torrent"/>
+                
                 <data android:host="*" />
             </intent-filter>
             <intent-filter>
