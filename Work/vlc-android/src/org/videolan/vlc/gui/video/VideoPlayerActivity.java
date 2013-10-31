@@ -228,6 +228,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 	private int CHECKSIZEMB = CHECKSIZE/(1024*1024);
 	private int REQUESTSIZE = 2 * CHECKSIZE;
 	private String testMagnet = "magnet:?xt=urn:btih:11B53B855B1487947276FB9C95F43085EA942AB1&dn=Tears+of+Steel+mkv&xl=647889040&dl=647889040&tr=udp://tracker.publicbt.com:80/announce&tr=udp://tracker.openbittorrent.com:80/announce&tr=http://exodus.desync.com:6969/announce";
+	private boolean makeMagnetOnce = false;
 	
 	private LibTorrent libTorrent() {
 		return ((VLCApplication) getApplication()).getLibTorrent();
@@ -493,6 +494,39 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 		onTriblerResume();
 	}
 
+	//TRIBLER
+	private void testMagnetMaking() {
+		File location = getTorrentDownloadDir();
+		Log.d(TAG, "making torrent at location: " + location);
+		libTorrent().AddMagnet(location.getAbsolutePath(), StorageModes.ALLOCATE.ordinal(), testMagnet);
+		new AsyncTask<Void, Void, Void>() {
+
+			@Override
+			protected Void doInBackground(Void... params) {
+				File location = getTorrentDownloadDir();
+				while(!libTorrent().HasMetaData(location.getAbsolutePath(), testMagnet)) {
+					//31-10-2013, always has metadata before coming here
+					Log.d(TAG, "has metadata: " + libTorrent().HasMetaData(location.getAbsolutePath(), testMagnet));
+					try {
+						Thread.sleep(100);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
+				return null;
+			}
+			
+			@Override
+			protected void onPostExecute(Void result) {
+				Log.d(TAG, "Making torrent...");
+				File location = getTorrentDownloadDir();
+				libTorrent().MakeTorrentFromMagnet(location.getAbsolutePath(), testMagnet);
+				Log.d(TAG, "Test done");
+			}
+			
+		}.execute();
+	}
+	
 	// TRIBLER
 	private void onTriblerResume() {
 		AudioServiceController.getInstance().bindAudioService(this);
@@ -504,7 +538,10 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 			libTorrent().ResumeTorrent(contentName);
 			libTorrent().ResumeSession();
 		}
-		
+		/*if(!makeMagnetOnce) {
+			testMagnetMaking();
+			makeMagnetOnce = true;
+		}*/
 		/*
 		 * if the activity has been paused by pressing the power button,
 		 * pressing it again will show the lock screen. But onResume will also
