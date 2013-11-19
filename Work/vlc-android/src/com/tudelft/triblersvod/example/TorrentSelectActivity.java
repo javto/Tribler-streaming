@@ -44,7 +44,7 @@ public class TorrentSelectActivity extends Activity {
 	}
 
 	private String cleanUriPath(String uri) {
-		return uri == null ? "" : URLDecoder.decode(uri);
+		return uri == null ? "" : Uri.decode(uri);
 	}
 
 	private void tryStartingTorrent(String fileName) {

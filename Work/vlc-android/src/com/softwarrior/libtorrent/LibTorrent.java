@@ -153,8 +153,6 @@ public class LibTorrent {
 	 * 
 	 * @param SavePath
 	 *            path to save torrent
-	 * @param StorageMode
-	 *            see addTorrent
 	 * @param MagnetLink
 	 *            the magnetlink to make the torrent from returns string of
 	 *            filename
@@ -162,8 +160,45 @@ public class LibTorrent {
 	public native boolean MakeTorrentFromMagnet(String SavePath,
 			String MagnetLink);
 
+	/**
+	 * Add a magnet link 
+	 * @param SavePath
+	 *            path to save torrent
+	 * @param StorageMode
+	 *            see addTorrent
+	 * @param MagnetLink
+	 *            the magnetlink to make the torrent from returns string of
+	 *            filename
+	 * @return true if succesfull
+	 */
 	public native boolean AddMagnet(String SavePath, int StorageMode,
 			String MagnetLink);
-
+	
+	/**
+	 * returns true if the magnetlink has received the metadata
+	 * @param SavePath
+	 * @param MagnetLink
+	 * @return true if the magnetlink has received the metadata
+	 */
 	public native boolean HasMetaData(String SavePath, String MagnetLink);
+	
+	/**
+	 * fix for magnets, should be called after getting data
+	 * preq: metadata is available and savepath is set
+	 * @param MagnetLink
+	 * @return true
+	 */
+	public native String GetMagnetContentFileName( String MagnetLink);
+	
+	/**
+	 * @return the stored save path
+	 */
+	public native String GetSavePath();
+	
+	/**
+	 * Set the save path for future use
+	 * @param SavePath, the absolute save path
+	 * @returns true
+	 */
+	public native boolean SetSavePath(String SavePath);
 }

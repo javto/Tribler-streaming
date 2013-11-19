@@ -32,6 +32,7 @@ import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Method;
 import java.net.URLDecoder;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.Locale;
 import java.util.Map;
@@ -73,6 +74,7 @@ import android.graphics.Color;
 import android.graphics.ImageFormat;
 import android.graphics.PixelFormat;
 import android.media.AudioManager;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
@@ -223,12 +225,14 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 	private int[] piecePriorities;
 	private int firstPieceIndex = -1;
 	private int lastPieceIndex = -1;
-	public boolean initCompleted;
-	private int CHECKSIZE = 25000000; // TODO resolution dependent
+	private static boolean initCompleted;
+	private static boolean seekBufferCompleted;
+	private int CHECKSIZE = 25000000; // TODO resolution and bandwidth dependent
 	private int CHECKSIZEMB = CHECKSIZE / (1024 * 1024);
 	private int REQUESTSIZE = 2 * CHECKSIZE;
 	private String testMagnet = "magnet:?xt=urn:btih:11B53B855B1487947276FB9C95F43085EA942AB1&dn=Tears+of+Steel+mkv&xl=647889040&dl=647889040&tr=udp://tracker.publicbt.com:80/announce&tr=udp://tracker.openbittorrent.com:80/announce&tr=http://exodus.desync.com:6969/announce";
-	private boolean makeMagnetOnce = false;
+	private static boolean pausedEarlier = false;
+	private int[] previousPiecePriorities;
 
 	private LibTorrent libTorrent() {
 		return ((VLCApplication) getApplication()).getLibTorrent();
@@ -457,13 +461,11 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 
 		editor.commit();
 		AudioServiceController.getInstance().unbindAudioService(this);
-
 		// TRIBLER
 		if (!contentName.isEmpty()) {
 			libTorrent().PauseTorrent(contentName);
 			libTorrent().PauseSession();
 		}
-
 	}
 
 	@Override
@@ -486,7 +488,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 
 		// TRIBLER
 		if (!contentName.isEmpty()) {
-			libTorrent().RemoveTorrent(contentName);
+			// libTorrent().RemoveTorrent(contentName);
 			libTorrent().AbortSession();
 		}
 	}
@@ -542,15 +544,16 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 		AudioServiceController.getInstance().bindAudioService(this);
 
 		load();
-
+		if (pausedEarlier) {
+			piecePriorities = previousPiecePriorities;
+			libTorrent().SetPiecePriorities(contentName, piecePriorities);
+		}
 		if (!contentName.isEmpty()) {
 			Log.d(TAG, "start isn't empty");
 			libTorrent().ResumeTorrent(contentName);
 			libTorrent().ResumeSession();
 		}
-		/*
-		 * if(!makeMagnetOnce) { testMagnetMaking(); makeMagnetOnce = true; }
-		 */
+
 		/*
 		 * if the activity has been paused by pressing the power button,
 		 * pressing it again will show the lock screen. But onResume will also
@@ -813,8 +816,9 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 			case EventHandler.MediaPlayerPlaying:
 				Log.i(TAG, "MediaPlayerPlaying");
 				// TRIBLER
-				if (activity.initCompleted)
+				if (activity.initCompleted && activity.seekBufferCompleted) {
 					activity.setESTracks();
+				}
 				break;
 			case EventHandler.MediaPlayerPaused:
 				Log.i(TAG, "MediaPlayerPaused");
@@ -901,6 +905,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 		} else if (torrentFile) {
 			mEndReached = false;
 			initCompleted = false;
+			seekBufferCompleted = false;
 			// TRIBLER
 		} else {
 			/* Exit player when reaching the end */
@@ -1213,7 +1218,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 				boolean fromUser) {
 			if (fromUser) {
 				if (mLibVLC.isSeekable() && initCompleted) {
-					initCompleted = false;
+					seekBufferCompleted = false;
 					setDownloadPrioritySeekTo(progress);
 				}
 			}
@@ -1563,8 +1568,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 		}
 		Log.d(TAG, "updateOverlayPausePlay");
 		// TRIBLER
-		// && preBufferDone)
-		if (initCompleted) {
+		if (initCompleted && seekBufferCompleted) {
 			mControls.setState(mLibVLC.isPlaying());
 			// mLibVLC.play();
 		} else {
@@ -1722,23 +1726,33 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 
 			int numberOfPieces = lastPieceIndex - firstPieceIndex;
 			final int startNewDownloadHere = firstPieceIndex
-					+ ((int) Math.floor(numberOfPieces * ratio)) - 10;
+					+ ((int) Math.floor(numberOfPieces * ratio));
 
-			Log.d(TAG, "startNewDownloadHere: " + startNewDownloadHere);
+			Log.d("SEEK TO", "startNewDownloadHere: " + startNewDownloadHere);
 
 			for (int i = firstPieceIndex; i <= lastPieceIndex; i++) {
 				piecePriorities[i] = i < startNewDownloadHere ? FilePriority.DONTDOWNLOAD
 						.ordinal() : FilePriority.NORMAL.ordinal();
 			}
 			libTorrent().SetPiecePriorities(contentName, piecePriorities);
+			Log.d("SEEK TO", "set piece priorities");
+
 			new AsyncTask<Void, Void, Void>() {
+				boolean running = true;
+
+				@Override
+				protected void onCancelled() {
+					running = false;
+				}
+
 				@Override
 				protected void onPreExecute() {
-					Log.d(TAG, "PreExecute of seek..."
+					Log.d("SEEK TO", "PreExecute of seek..."
 							+ getPiecePrioritiesString(piecePriorities));
 
-					if (mLibVLC.isPlaying())
+					if (mLibVLC.isPlaying()) {
 						mLibVLC.pause();
+					}
 
 					findViewById(R.id.libtorrent_loading).setVisibility(
 							View.VISIBLE);
@@ -1746,33 +1760,40 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 
 				@Override
 				protected Void doInBackground(Void... params) {
-					int pieceSize = (int) libTorrent().GetPieceSize(
-							contentName, 0);
-					int rightIndex = Math.min(
-							(startNewDownloadHere + (REQUESTSIZE / pieceSize)),
-							lastPieceIndex);
-					int piecesToCheck = rightIndex - startNewDownloadHere;
+					long pieceSize = libTorrent().GetPieceSize(contentName, 0);
+					int rightIndex = startNewDownloadHere
+							+ ((int) (REQUESTSIZE / pieceSize));
+					int piecesToCheck = (int) (REQUESTSIZE / pieceSize);
+					long newCheckSize = CHECKSIZE;
 
-					int newCheckSize = CHECKSIZE;
-					if (piecesToCheck * pieceSize < CHECKSIZE)
+					if (rightIndex > lastPieceIndex) {
+						rightIndex = lastPieceIndex;
+						piecesToCheck = rightIndex - startNewDownloadHere;
 						newCheckSize = piecesToCheck * pieceSize;
+					}
 
-					while (!isCancelled()) {
-						Log.d(TAG, "!isCancelled in Async, newCheckSize: "
+					while (running) {
+						Log.d("SEEK TO", "running in Async, newCheckSize: "
 								+ newCheckSize + " piecesToCheck: "
 								+ piecesToCheck + " startPiece: "
 								+ startNewDownloadHere);
-						int sum = 0;
+						long sum = 0;
 
 						for (int i = startNewDownloadHere; i <= rightIndex; i++) {
 							if (libTorrent().HavePiece(contentName, i)) {
+								// Log.d("SEEK TO", "have piece " + i);
 								sum += pieceSize;
 							}
 							if (sum >= newCheckSize) {
+								try {
+									Thread.sleep(1000);
+								} catch (InterruptedException e) {
+									e.printStackTrace();
+								}
 								return null;
 							}
 						}
-						Log.d(TAG, "sum: " + sum);
+						Log.d("SEEK TO", "sum: " + sum);
 						try {
 							Thread.sleep(1000);
 						} catch (InterruptedException e) {
@@ -1784,19 +1805,23 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 
 				@Override
 				protected void onPostExecute(Void result) {
-					Log.d(TAG, "postExecute seek..."
+					Log.d("SEEK TO", "postExecute seek..."
 							+ getPiecePrioritiesString(piecePriorities));
 
 					findViewById(R.id.libtorrent_loading).setVisibility(
 							View.GONE);
-
+					seekBufferCompleted = true;
+					Log.d("SEEK TO", "setting time and overlay to: "
+							+ setDownloadProgress);
 					mLibVLC.setTime(setDownloadProgress);
+					mTime.setText(Util.millisToString(setDownloadProgress));
 					setOverlayProgress();
+					Log.d("SEEK TO", "setting text and showing overlay");
 					mTime.setText(Util.millisToString(setDownloadProgress));
 					showInfo(Util.millisToString(setDownloadProgress));
 					showOverlay();
 					hideInfo();
-					initCompleted = true;
+					Log.d("SEEK TO", "starting to play");
 					mLibVLC.play();
 				}
 
@@ -1814,9 +1839,14 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 	 * @param savePath
 	 *            , where the torrent cache is
 	 */
-	private void deletePreviousTorrentCache(File savePath) {
-		Log.d(TAG, "deleting previous torrent cache");
-		contentName = libTorrent().GetTorrentName(mLocation);
+	private void deletePreviousTorrentCache(File savePath, boolean magnet) {
+		Log.d("Deleting cache",
+				"deleting previous torrent cache if != lastContent");
+		libTorrent().MakeTorrentFromMagnet(savePath.getAbsolutePath(), mLocation);
+		contentName = magnet ? libTorrent().GetMagnetContentFileName(mLocation)
+				: libTorrent().GetTorrentName(mLocation);
+		//contentName = libTorrent().GetTorrentName(mLocation);
+		Log.d("Deleting cache", "current content: " + contentName + "//end//");
 		String contentNameDir = new File(savePath, contentName)
 				.getAbsolutePath();
 		SharedPreferences prefs = PreferenceManager
@@ -1825,7 +1855,9 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 		String latestContentDir = prefs.getString(KEY_LATEST_CONTENT_DIR, "");
 		Editor e = prefs.edit();
 
+		Log.d("Deleting cache", "previous content: " + latestContent);
 		if (!latestContent.equals(contentName)) {
+			Log.d("Deleting cache", "previous content: " + latestContent);
 			e.putString(KEY_LATEST_CONTENT, contentName);
 			e.putString(KEY_LATEST_CONTENT_DIR, contentNameDir);
 			try {
@@ -1845,7 +1877,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 	 * @return location of biggest file
 	 */
 	private File setFilesPriorities(File savePath) {
-
+		Log.d("setPrios", "setting prios for: " + contentName);
 		String[] files = libTorrent().GetTorrentFiles(contentName).split(
 				"\\r?\\n");
 		long[] sizes = new long[files.length];
@@ -1890,37 +1922,48 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 	 */
 	private boolean isAlreadyDownloaded() {
 		if (libTorrent().GetTorrentState(contentName) == TorrentState.CHECKING_FILES
-				.ordinal()
-				|| libTorrent().GetTorrentProgressSize(contentName) >= CHECKSIZEMB) {
-
-			mLibVLC.pause();
+				.ordinal()) {
+			Log.d(TAG,
+					"checking files? progressSize?"
+							+ (libTorrent().GetTorrentState(contentName) == TorrentState.CHECKING_FILES
+									.ordinal())
+							+ libTorrent().GetTorrentProgressSize(contentName));
+			mLibVLC.stop();
 			findViewById(R.id.libtorrent_loading).setVisibility(View.VISIBLE);
 
-			int counter = 0; 	// cheating, because you don't wait until
+			int counter = 0; // cheating, because you don't wait until
 								// program action, but only a certain amount
 								// of time!
 			int sleeptime = 300;
 			while (libTorrent().GetTorrentProgressSize(contentName) < CHECKSIZEMB
-					&& counter <= 3000) {
+					&& counter <= 1500) {
 				Log.d(TAG,
 						"while "
 								+ libTorrent().GetTorrentProgressSize(
 										contentName) + " < CZ");
+				if (libTorrent().GetTorrentState(contentName) != TorrentState.CHECKING_FILES
+						.ordinal()) {
+					Log.d(TAG, "breaking...it's not checking files anymore");
+					if (libTorrent().GetTorrentProgressSize(contentName) >= CHECKSIZEMB) {
+						return true;
+					} else {
+						return false;
+					}
+
+				}
 				try {
 					Thread.sleep(sleeptime);
 				} catch (InterruptedException e1) {
 					e1.printStackTrace();
 				}
-				if (libTorrent().GetTorrentState(contentName) != TorrentState.CHECKING_FILES
-						.ordinal()) {
-					Log.d(TAG, "breaking...it's not checking files anymore");
-					return true;
-				}
 				counter += sleeptime;
 			}
 			return true;
+		} else if (libTorrent().GetTorrentProgressSize(contentName) >= CHECKSIZEMB) {
+			return true;
+		} else {
+			return false;
 		}
-		return false;
 	}
 
 	private File addTorrent() {
@@ -1934,16 +1977,17 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 				StorageModes.ALLOCATE.ordinal(), false);
 		return savePath;
 	}
-	
+
 	private File addMagnet() {
 		torrentFile = true;
 		Log.d(TAG, "GOT MAGNET: " + mLocation);
 		File savePath = getTorrentDownloadDir();
 		Log.d(TAG, "SAVEPATH: " + savePath.getAbsolutePath());
-		libTorrent().AddMagnet(savePath.getAbsolutePath(), 
+		libTorrent().AddMagnet(savePath.getAbsolutePath(),
 				StorageModes.ALLOCATE.ordinal(), mLocation);
 		return savePath;
 	}
+
 	/**
 	 * External extras: - position (long) - position of the video to start with
 	 * (in ms)
@@ -1982,7 +2026,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 				}
 			} else {
 				// Plain URI
-				mLocation = getIntent().getDataString();
+				mLocation = Uri.decode(getIntent().getDataString());
 				Log.d(TAG, "datastring: " + mLocation);
 			}
 			if (getIntent().getExtras() != null)
@@ -1992,7 +2036,8 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 				&& getIntent().getAction().equals(PLAY_FROM_VIDEOGRID)
 				&& getIntent().getExtras() != null) {
 			/* Started from VideoListActivity */
-			mLocation = getIntent().getExtras().getString("itemLocation");
+			mLocation = Uri.decode(getIntent().getExtras().getString(
+					"itemLocation"));
 			itemTitle = getIntent().getExtras().getString("itemTitle");
 			dontParse = getIntent().getExtras().getBoolean("dontParse");
 			fromStart = getIntent().getExtras().getBoolean("fromStart");
@@ -2000,25 +2045,30 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 		}
 
 		// TRIBLER
-		if (mLocation != null && (mLocation.endsWith(".torrent")|| mLocation.startsWith("magnet"))) {
+		if (mLocation != null
+				&& (mLocation.endsWith(".torrent") || mLocation
+						.startsWith("magnet"))) {
 			File savePath;
-			
-			if(mLocation.endsWith(".torrent")){
+			boolean magnet = false;
+			if (mLocation.endsWith(".torrent")) {
 				savePath = addTorrent();
-			} else { //mLocation.startsWith("magnet")
+			} else { // mLocation.startsWith("magnet")
 				savePath = addMagnet();
-				while(!libTorrent().HasMetaData(savePath.getAbsolutePath(), mLocation)) {
-					Log.d(TAG, "waiting for meta data");
+
+				while (!libTorrent().HasMetaData(savePath.getAbsolutePath(),
+						mLocation)) {
+					Log.d(TAG, "waiting for meta data, mLocation = "
+							+ mLocation);
 					try {
-						Thread.sleep(100);
+						Thread.sleep(200);
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
 				}
+				magnet = true;
 			}
-			
-			deletePreviousTorrentCache(savePath);
-
+			libTorrent().SetSavePath(savePath.getAbsolutePath());
+			deletePreviousTorrentCache(savePath, magnet);
 			File location = setFilesPriorities(savePath);
 
 			mLocation = "file://" + location.getAbsolutePath();
@@ -2031,12 +2081,17 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 			}
 			Log.d(TAG, "!!!!!!!!!! Exists !!!!!!!!!!!!");
 
-			if (isAlreadyDownloaded()
-					&& libTorrent().GetTorrentProgressSize(contentName) >= CHECKSIZEMB) {
+			if (isAlreadyDownloaded()) {
 				Log.d(TAG, "contentsize >= checksize");
 				findViewById(R.id.libtorrent_loading).setVisibility(View.GONE);
 				mLibVLC.play();
 				initCompleted = true;
+				seekBufferCompleted = true;
+			} else {
+				Log.d(TAG, "contentsize not bigger than checksize");
+				mLibVLC.stop();
+				initCompleted = false;
+				seekBufferCompleted = false;
 			}
 
 			if (!initCompleted) {
@@ -2055,7 +2110,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 
 				for (int i = 0; i < piecePriorities.length; i++) {
 					if (piecePriorities[i] != 0) {
-						// We'ŕe in the file to download
+						// We're in the file to download
 						if (firstPieceIndex == -1)
 							// Found the first piece
 							firstPieceIndex = i;
@@ -2066,7 +2121,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 									.ordinal();
 						}
 					} else {
-						// We'ŕe either before or after the file to download
+						// We're either before or after the file to download
 						if (firstPieceIndex != -1)
 							// After firstPiece
 							if (lastPieceIndex == -1)
@@ -2131,11 +2186,18 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 				// TODO: TRIBLER check progress of piece priority: if last 2 are
 				// downloaded, setup libswift priorities.
 				new AsyncTask<Void, Void, Void>() {
+					boolean running = true;
+
+					@Override
+					protected void onCancelled() {
+						running = false;
+					}
+
 					@Override
 					protected Void doInBackground(Void... params) {
 
 						boolean startedOnce = false;
-						while (!isCancelled()) {
+						while (running) {
 							Log.d(TAG,
 									"InitCompletedcheckthread "
 											+ mLibVLC.getLength()
@@ -2201,6 +2263,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 						libTorrent().SetPiecePriorities(contentName,
 								piecePriorities);
 						initCompleted = true;
+						seekBufferCompleted = true;
 						libTorrent().ResumeTorrent(contentName);
 						onTriblerResume();
 					}
