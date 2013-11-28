@@ -201,4 +201,10 @@ public class LibTorrent {
 	 * @returns true
 	 */
 	public native boolean SetSavePath(String SavePath);
+	
+	/**
+	 * Will return the number of torrents in the libtorrent queue
+	 * @return number of torrents in the libtorrent queue
+	 */
+	public native int GetNumberOfTorrents();
 }

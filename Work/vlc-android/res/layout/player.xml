@@ -236,6 +236,15 @@
             android:text="Loading..." 
             android:textAppearance="?android:attr/textAppearanceMedium"
             android:textColor="@android:color/white" />
+        
+        <TextView  
+	        android:id="@+id/libtorrent_progress_percentage"  
+	        android:layout_width="wrap_content"  
+	        android:layout_height="wrap_content"  
+	        android:layout_centerInParent="true"  
+	        android:background="@android:color/transparent"  
+	        android:gravity="center"  
+	        android:textColor="@android:color/white" />
     </RelativeLayout>
 
     <TextView
