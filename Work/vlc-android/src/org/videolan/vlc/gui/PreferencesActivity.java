@@ -32,6 +32,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.os.Bundle;
 import android.preference.CheckBoxPreference;
@@ -42,9 +43,11 @@ import android.preference.Preference.OnPreferenceChangeListener;
 import android.preference.Preference.OnPreferenceClickListener;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
+import android.util.Log;
 import android.widget.Toast;
 
 import com.tudelft.triblersvod.example.R;
+import com.tudelft.triblersvod.example.TorrentPreferences;
 
 @SuppressWarnings("deprecation")
 public class PreferencesActivity extends PreferenceActivity implements OnSharedPreferenceChangeListener {
@@ -56,6 +59,7 @@ public class PreferencesActivity extends PreferenceActivity implements OnSharedP
     public final static String VIDEO_RESUME_TIME = "VideoResumeTime";
     public final static String VIDEO_SUBTITLE_FILES = "VideoSubtitleFiles";
     public final static int RESULT_RESCAN = RESULT_FIRST_USER + 1;
+    public final static String KEY_LIBTORRENT_DEBUG = "libtorrent_debug";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -65,17 +69,19 @@ public class PreferencesActivity extends PreferenceActivity implements OnSharedP
         // Directories
         Preference directoriesPref = findPreference("directories");
         directoriesPref.setOnPreferenceClickListener(
-                new OnPreferenceClickListener() {
+new OnPreferenceClickListener() {
 
-                    @Override
-                    public boolean onPreferenceClick(Preference preference) {
-                        Intent intent = new Intent(getApplicationContext(), BrowserActivity.class);
-                        startActivity(intent);
-                        setResult(RESULT_RESCAN);
-                        return true;
-                    }
-                });
+					@Override
+					public boolean onPreferenceClick(Preference preference) {
+						Intent intent = new Intent(getApplicationContext(),
+								BrowserActivity.class);
+						startActivity(intent);
+						setResult(RESULT_RESCAN);
+						return true;
+					}
+				});
 
+        
         // Screen orientation
         ListPreference screenOrientationPref = (ListPreference) findPreference("screen_orientation");
         screenOrientationPref.setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
@@ -86,9 +92,9 @@ public class PreferencesActivity extends PreferenceActivity implements OnSharedP
                 editor.putString("screen_orientation_value", (String)newValue);
                 editor.commit();
                 return true;
-            }
-        });
-
+	            }
+	        });
+        
         // Headset detection option
         CheckBoxPreference checkboxHS = (CheckBoxPreference) findPreference("enable_headset_detection");
         checkboxHS.setOnPreferenceClickListener(
@@ -217,9 +223,10 @@ public class PreferencesActivity extends PreferenceActivity implements OnSharedP
         sharedPrefs.registerOnSharedPreferenceChangeListener(this);
     }
 
+    
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-        if(key.equalsIgnoreCase("enable_iomx")
+    	if(key.equalsIgnoreCase("enable_iomx")
                 || key.equalsIgnoreCase("subtitles_text_encoding")
                 || key.equalsIgnoreCase("aout")
                 || key.equalsIgnoreCase("chroma_format")
@@ -230,7 +237,7 @@ public class PreferencesActivity extends PreferenceActivity implements OnSharedP
                 || key.equalsIgnoreCase("network_caching")) {
             Util.updateLibVlcSettings(sharedPreferences);
             LibVLC.restart(this);
-        }
+        } 
     }
 
     @Override
@@ -241,8 +248,8 @@ public class PreferencesActivity extends PreferenceActivity implements OnSharedP
 
     @Override
     protected void onPause() {
+    	AudioServiceController.getInstance().unbindAudioService(this);
         super.onPause();
-        AudioServiceController.getInstance().unbindAudioService(this);
     }
 
     private void restartService(Context context) {

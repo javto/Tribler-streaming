@@ -1,8 +1,5 @@
 package com.tudelft.triblersvod.example;
 
-import java.net.URLDecoder;
-
-import org.apache.commons.lang3.StringEscapeUtils;
 import org.videolan.vlc.gui.video.VideoPlayerActivity;
 
 import android.app.Activity;
@@ -13,7 +10,12 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
 
-public class TorrentSelectActivity extends Activity {
+import com.actionbarsherlock.app.SherlockFragmentActivity;
+import com.actionbarsherlock.view.Menu;
+import com.actionbarsherlock.view.MenuInflater;
+import com.actionbarsherlock.view.MenuItem;
+
+public class TorrentSelectActivity extends SherlockFragmentActivity {
 
 	private final static String DEBUG_TAG = "TorrentSelectActivity";
 	private int TORRENT_REQ_CODE;
@@ -22,16 +24,36 @@ public class TorrentSelectActivity extends Activity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_torrentselect);
+		
 		String path = cleanUriPath(getIntent().getDataString());
 		if (!(path == null || path.equals("")))
 			tryStartingTorrent(path);
+	}
+	
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		MenuInflater inflater = getSupportMenuInflater();
+	    inflater.inflate(R.menu.torrent_select, menu);
+		return true;
+	}
+
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) {
+		Intent intent;
+		 switch (item.getItemId()) {
+	        case R.id.torrent_settings_menu:
+	        	intent = new Intent(this, SetPreferenceActivity.class);
+				startActivity(intent);
+	            return true;
+	        default:
+	            return super.onOptionsItemSelected(item);
+		 }
 	}
 
 	public void selectTorrent(View button) {
 		Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
 		intent.setType("file/*");
 		startActivityForResult(intent, TORRENT_REQ_CODE);
-		// TODO Catch no file-explorer present exception
 	}
 
 	@Override

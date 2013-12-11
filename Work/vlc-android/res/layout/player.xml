@@ -233,7 +233,7 @@
             android:layout_height="wrap_content"
             android:layout_above="@+id/libtorrent_progressbar"
             android:layout_centerHorizontal="true"
-            android:text="Loading..." 
+            android:text="@string/libt_progress_text"
             android:textAppearance="?android:attr/textAppearanceMedium"
             android:textColor="@android:color/white" />
         

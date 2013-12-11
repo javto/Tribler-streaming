@@ -9,11 +9,19 @@
     tools:context=".TorrentSelectActivity" >
 
     <Button
-        android:id="@+id/torrentselect_btn"
+        android:id="@+id/torrentselect_buttton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_centerInParent="true"
+        android:layout_centerHorizontal="true"
+        android:layout_below="@+id/torrentselect_text"
         android:onClick="selectTorrent"
         android:text="@string/btn_select_torrent" />
-
+    
+	<TextView 
+	    android:id="@+id/torrentselect_text"
+	    android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:text="@string/intro_text"/>
 </RelativeLayout>

@@ -17,8 +17,16 @@ public class LibTorrent {
 	//
 	// private LibTorrent(){};
 	// -----------------------------------------------------------------------------
+	/**
+	 * 
+	 * @param ListenPort
+	 * @param UploadLimit in kb/s
+	 * @param DownloadLimit in kb/s
+	 * @param Encryption on or off
+	 * @return
+	 */
 	public native boolean SetSession(int ListenPort, int UploadLimit,
-			int DownloadLimit);
+			int DownloadLimit, boolean Encryption);
 
 	/**
 	 * enum proxy_type { 0 - none, * a plain tcp socket is used, and the other

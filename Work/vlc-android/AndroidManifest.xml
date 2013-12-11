@@ -33,7 +33,6 @@
             android:theme="@style/Theme.VLC" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
@@ -58,24 +57,8 @@
             android:name="com.tudelft.triblersvod.example.TorrentSelectActivity"
             android:label="@string/app_name"
             android:screenOrientation="landscape" >
-
-            <!--
-            intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-
-                <data android:scheme="file" />
-                <data android:mimeType="*/*" />
-                <data android:pathPattern=".*\\.torrent" />
-                <data android:host="*" />
-            </intent-filter
-            -->
         </activity>
-        <activity
-            android:name="com.tudelft.triblersvod.example.TorrentProgressActivity"
-            android:screenOrientation="landscape" />
+        <activity android:name="com.tudelft.triblersvod.example.SetPreferenceActivity" />
         <activity android:name="org.videolan.vlc.gui.AboutActivity" />
         <activity android:name="org.videolan.vlc.gui.PreferencesActivity" />
         <activity
@@ -87,7 +70,8 @@
         <activity
             android:name="org.videolan.vlc.gui.video.VideoPlayerActivity"
             android:configChanges="orientation|screenSize"
-            android:theme="@style/Theme.VLC.Fullscreen" >
+            android:theme="@style/Theme.VLC.Fullscreen"
+            android:launchMode="singleTask" >
 
             <!-- This filter captures torrent files -->
             <intent-filter>

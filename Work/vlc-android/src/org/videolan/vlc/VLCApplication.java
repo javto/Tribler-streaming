@@ -44,11 +44,25 @@ public class VLCApplication extends Application {
 	private static int LISTEN_PORT = 0;
 	private static int LIMIT_UL = 0;
 	private static int LIMIT_DL = 0;
+	private static boolean ENCRYPTION = false;
 
 	public LibTorrent getLibTorrent() {
 		if (this.libTorrent == null) {
 			this.libTorrent = new LibTorrent();
-			this.libTorrent.SetSession(LISTEN_PORT, LIMIT_UL, LIMIT_DL);
+			this.libTorrent.SetSession(LISTEN_PORT, LIMIT_UL, LIMIT_DL, ENCRYPTION);
+			this.libTorrent.ResumeSession();
+		}
+		return this.libTorrent;
+	}
+	
+	public LibTorrent getLibTorrent(int listenPort, int uploadLimit, int downloadLimit, boolean encryption) {
+		if (this.libTorrent == null) {
+			this.libTorrent = new LibTorrent();
+			LISTEN_PORT = listenPort;
+			LIMIT_UL = uploadLimit;
+			LIMIT_DL = downloadLimit;
+			ENCRYPTION = encryption;
+			this.libTorrent.SetSession(listenPort, uploadLimit, downloadLimit, encryption);
 			this.libTorrent.ResumeSession();
 		}
 		return this.libTorrent;

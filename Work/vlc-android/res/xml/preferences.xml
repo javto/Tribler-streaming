@@ -108,11 +108,11 @@
                 android:defaultValue=""
                 android:maxLength="5" />
             
-            <CheckBoxPreference
+           <!-- <CheckBoxPreference
             	android:defaultValue="true"
-            	android:key="enable_libtorrent_debug"
-            	android:summary="@string/enable_libtorrent_debug_summary"
-            	android:title="@string/enable_libtorrent_debug" />
+            	android:key="libtorrent_debug"
+            	android:summary="@string/libtorrent_debug_summary"
+            	android:title="@string/libtorrent_debug" /> -->
 
             <EditTextPreference
                 android:defaultValue=""

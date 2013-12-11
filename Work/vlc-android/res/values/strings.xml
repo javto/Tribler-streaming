@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
-    
+
     <string name="app_name" translatable="false">Tribler Streaming</string>
     <string name="btn_select_torrent">Select a Torrent</string>
 
@@ -43,6 +43,7 @@
     <string name="unknown_album">Unknown Album</string>
     <string name="unknown_genre">Unknown Genre</string>
     <string name="songs">Songs</string>
+
     <plurals name="songs_quantity">
         <item quantity="one">1 song</item>
         <item quantity="other">%d songs</item>
@@ -86,14 +87,12 @@
     <string name="nosubdirectory">No subdirectories.</string>
     <string name="nohistory">You have no playback history yet.</string>
     <string name="validation">Are you sure?</string>
-
     <string name="cover_art">Cover art</string>
     <string name="shuffle">Shuffle</string>
     <string name="repeat">Repeat none/single/all</string>
     <string name="previous">Previous</string>
     <string name="stop">Stop</string>
     <string name="next">Next</string>
-
     <string name="locked">Locked</string>
     <string name="unlocked">Unlocked</string>
     <string name="surface_best_fit">Best fit</string>
@@ -121,7 +120,6 @@
     <string name="track_samplerate_info">Sample rate: %1$d Hz\n</string>
     <string name="track_resolution_info">Resolution: %1$dx%2$d\n</string>
     <string name="track_framerate_info">Frame rate: %1$.3f\n</string>
-
     <string name="tools">Tools</string>
     <string name="playback_speed">Playback speed</string>
     <string name="sleep_title">Sleep timer</string>
@@ -130,7 +128,6 @@
     <string name="subtitle_label">Add subtitle file</string>
     <string name="subtitle_select">Select subtitle file</string>
     <string name="no_file_picker_found">No file picker was found on the system.</string>
-
     <string name="open">Open</string>
     <string name="open_mrl">Open MRL</string>
     <string name="open_mrl_dialog_title">Open network stream</string>
@@ -147,7 +144,6 @@
     <string name="colon" translatable="false">:</string>
     <string name="plus" translatable="false">+</string>
     <string name="minus" translatable="false">&#8722;</string>
-
     <string name="encountered_error_title">Playback error</string>
     <string name="encountered_error_message">VLC encountered an error with this media.\nPlease try refreshing the media library.</string>
     <string name="invalid_location">The location %1$s cannot be played</string>
@@ -208,14 +204,12 @@
     <string name="clear_media_db">Clear media database</string>
     <string name="media_db_cleared">Media database cleared!</string>
     <string name="subtitles_text_encoding">Subtitle text encoding</string>
-
     <string name="debug_logs">Debug logs</string>
     <string name="start_logging">Start logging</string>
     <string name="stop_logging">Stop logging</string>
     <string name="clear_log">Clear log</string>
     <string name="copy_to_clipboard">Copy to clipboard</string>
     <string name="copied_to_clipboard">Copied log to clipboard.</string>
-
     <string name="advanced_prefs_category">Advanced</string>
     <string name="advanced_debugging">Advanced debugging</string>
     <string name="aout">Audio output</string>
@@ -246,7 +240,6 @@
         <item>3</item>
         <item>4</item>
     </string-array>
-
     <string-array name="screen_orientation_list">
         <item>@string/screen_orientation_sensor</item>
         <item>@string/screen_orientation_start_lock</item>
@@ -263,7 +256,6 @@
         <item>8</item> <!-- 8 ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE -->
         <item>9</item> <!-- 9 ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT -->
     </string-array>
-
     <string-array name="subtitles_encoding_list" tools:ignore="TypographyDashes">
         <item>Default (Windows-1252)</item>
         <item>Universal (UTF-8)</item>
@@ -352,7 +344,6 @@
         <item>VISCII</item>
         <item>Windows-1258</item>
     </string-array>
-
     <string-array name="aouts_froyo">
         <item>@string/aout_audiotrack_java</item>
         <item>@string/aout_audiotrack</item>
@@ -371,24 +362,34 @@
         <item>1</item>
         <item>2</item>
     </string-array>
-
     <string-array name="chroma_formats_values" translatable="false">
         <item>RV32</item>
         <item>RV16</item>
         <item>YV12</item>
     </string-array>
-
     <string-array name="chroma_formats" translatable="false">
         <item>RGB 32-bit</item>
         <item>RGB 16-bit</item>
         <item>YUV</item>
     </string-array>
-    
+
     <!-- TRIBLER -->
     <string name="show_debug">Toggle download debug</string>
     <string name="invisible">for internal use only</string>
-    <string name="enable_libtorrent_debug_summary">enable to see information about download</string>
-    <string name="enable_libtorrent_debug">Libtorrent Debug</string>
-    
-
+    <string name="intro_text">Welcome to Tribler Streaming! Select a torrent by clicking on the button below or open a magnet link from your favourite provider.</string>
+	<string name="libt_progress_text">Loading &#8230;</string>
+	<!-- TRIBLER Torrent setting strings -->
+	<string name="libtorrent_debug_summary">enable to see information about download</string>
+    <string name="libtorrent_debug">Libtorrent Debug</string>
+    <string name="settings">Settings</string>
+	<string name="session_settings">Session Settings</string>
+	<string name="security">Encryption</string>
+	<string name="security_sum">Enable or disable encrypted connections</string>
+	<string name="upload">Upload Limit</string>
+	<string name="upload_sum">Set the upload speed limit in kb/s, 0 for unlimited</string>
+	<string name="download">Download Limit</string>
+	<string name="download_sum">Set the download speed limit in kb/s, 0 for unlimited</string>
+	<string name="listenport">Listen Port</string>
+	<string name="listenport_sum">Set the port to listen to, default is 54321</string>
+	<string name="extra_info">Info Settings</string>
 </resources>
