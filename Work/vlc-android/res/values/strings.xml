@@ -2,8 +2,7 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
 
     <string name="app_name" translatable="false">Tribler Streaming</string>
-    <string name="btn_select_torrent">Select a Torrent</string>
-
+    
     <!-- Main VLC Interface -->
     <string name="widget_name" translatable="false">VLC mini player</string>
     <string name="ok">OK</string>
@@ -20,7 +19,7 @@
         <item quantity="one">%d result found</item>
         <item quantity="other">%d results found</item>
     </plurals>
-
+    
     <string name="play">Play</string>
     <string name="play_from_start">Play from start</string>
     <string name="play_as_audio">Play as audio</string>
@@ -374,10 +373,14 @@
     </string-array>
 
     <!-- TRIBLER -->
+    <string name="btn_select_torrent">Stream local .torrent&#8230;</string>
+    <string name="btn_search_magnet">Search on Google for videos&#8230;</string>
     <string name="show_debug">Toggle download debug</string>
     <string name="invisible">for internal use only</string>
-    <string name="intro_text">Welcome to Tribler Streaming! Select a torrent by clicking on the button below or open a magnet link from your favourite provider.</string>
-	<string name="libt_progress_text">Loading &#8230;</string>
+    <string name="intro_text">Search for videos by clicking one of the buttons below, or click one of the three example videos.</string>
+	<string name="intro_text_no_file_explorer">Search for videos by clicking the button below, or click one of the three example videos.</string>
+	
+	<string name="libt_progress_text">Loading&#8230;</string>
 	<!-- TRIBLER Torrent setting strings -->
 	<string name="libtorrent_debug_summary">enable to see information about download</string>
     <string name="libtorrent_debug">Libtorrent Debug</string>
@@ -392,4 +395,11 @@
 	<string name="listenport">Listen Port</string>
 	<string name="listenport_sum">Set the port to listen to, default is 54321</string>
 	<string name="extra_info">Info Settings</string>
+	<!--  TRIBLER movie image descr. -->
+	<string name="magnet1text">Tears of Steel</string>
+	<string name="magnet2text">Sintel</string>
+	<string name="magnet3text">A Lonely Place for Dying</string>
+	<string name="magnet1">magnet:?xt=urn:btih:02767050e0be2fd4db9a2ad6c12416ac806ed6ed%26dn=Tears+of+Steel+%282012%29+1080p+webm%26tr=udp%3A%2F%2Ftracker.openbittorrent.com%3A80%26tr=udp%3A%2F%2Ftracker.publicbt.com%3A80%26tr=udp%3A%2F%2Ftracker.istole.it%3A6969%26tr=udp%3A%2F%2Ftracker.ccc.de%3A80%26tr=udp%3A%2F%2Fopen.demonii.com%3A1337</string>
+	<string name="magnet2">magnet:?xt=urn:btih:a559d30df6a3a6bb09c0c6914e7d67cfe4715335%26dn=Sintel.2010.720p.mkv%26tr=udp%3A%2F%2Ftracker.openbittorrent.com%3A80%26tr=udp%3A%2F%2Ftracker.publicbt.com%3A80%26tr=udp%3A%2F%2Ftracker.istole.it%3A6969%26tr=udp%3A%2F%2Ftracker.ccc.de%3A80%26tr=udp%3A%2F%2Fopen.demonii.com%3A1337</string>
+	<string name="magnet3">magnet:?xt=urn:btih:3e25c80563a1a5ccf1c50956abf7056b363a4e44%26dn=A+Lonely+Place+for+Dying+Part+1+2011+720p+x264-VODO+%5Beztv%5D%26tr=udp%3A%2F%2Ftracker.openbittorrent.com%3A80%26tr=udp%3A%2F%2Ftracker.publicbt.com%3A80%26tr=udp%3A%2F%2Ftracker.istole.it%3A6969%26tr=udp%3A%2F%2Ftracker.ccc.de%3A80%26tr=udp%3A%2F%2Fopen.demonii.com%3A1337</string>
 </resources>

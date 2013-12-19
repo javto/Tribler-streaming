@@ -1,13 +1,19 @@
 package com.tudelft.triblersvod.example;
 
+import java.util.List;
+
 import org.videolan.vlc.gui.video.VideoPlayerActivity;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.net.Uri;
 import android.os.Bundle;
+import android.text.method.LinkMovementMethod;
 import android.util.Log;
 import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.actionbarsherlock.app.SherlockFragmentActivity;
@@ -24,10 +30,39 @@ public class TorrentSelectActivity extends SherlockFragmentActivity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_torrentselect);
-		
+		//((TextView) findViewById(R.id.torrentselect_text)).setMovementMethod(LinkMovementMethod.getInstance());
 		String path = cleanUriPath(getIntent().getDataString());
 		if (!(path == null || path.equals("")))
 			tryStartingTorrent(path);
+	}
+	
+	@Override 
+	protected void onResume() {
+		super.onResume();
+		if(findViewById(R.id.torrentselect_buttton).getVisibility() == View.GONE) {
+			PackageManager manager = this.getPackageManager();
+			Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+			intent.setType("file/*");
+		    List<ResolveInfo> infos = manager.queryIntentActivities(intent, 0);
+		    if (infos.size() > 0) {
+	        	//set button
+	        	findViewById(R.id.torrentselect_buttton).setVisibility(View.VISIBLE);
+	        	TextView welcomeText = (TextView) findViewById(R.id.torrentselect_text);
+	        	welcomeText.setText(R.string.intro_text);
+	        }
+		} else { //visible button
+			PackageManager manager = this.getPackageManager();
+			Intent intent = new Intent(Intent.ACTION_GET_CONTENT);
+			intent.setType("file/*");
+		    List<ResolveInfo> infos = manager.queryIntentActivities(intent, 0);
+		    if (infos.size() == 0) {
+	        	//remove button
+	        	findViewById(R.id.torrentselect_buttton).setVisibility(View.GONE);
+	        	TextView welcomeText = (TextView) findViewById(R.id.torrentselect_text);
+	        	welcomeText.setText(R.string.intro_text_no_file_explorer);
+	        }
+		}
+		
 	}
 	
 	@Override
@@ -72,12 +107,38 @@ public class TorrentSelectActivity extends SherlockFragmentActivity {
 	private void tryStartingTorrent(String fileName) {
 		Log.d(DEBUG_TAG, "Trying to start: " + fileName);
 		if (fileName.endsWith(".torrent")) {
-			Intent i = new Intent(this, VideoPlayerActivity.class);
-			i.setAction(Intent.ACTION_VIEW);
-			i.setData(Uri.parse(fileName));
-			startActivity(i);
+			startVideo(Uri.parse(fileName));
 		} else
 			Toast.makeText(this, "Error, filename did not end with '.torrent'",
 					Toast.LENGTH_LONG).show();
+	}
+	
+	public void openMagnetImage(View image) {
+		switch (image.getId()) {
+		case R.id.magnet_img_1:
+			startVideo(Uri.parse(Uri.decode(getString(R.string.magnet1))));
+			break;
+		case R.id.magnet_img_2:
+			startVideo(Uri.parse(Uri.decode(getString(R.string.magnet2))));
+			break;
+		case R.id.magnet_img_3:
+			startVideo(Uri.parse(Uri.decode(getString(R.string.magnet3))));
+			break;
+		default:
+			break;
+		}
+	}
+	
+	private void startVideo(Uri data) {
+		Intent i = new Intent(this, VideoPlayerActivity.class);
+		i.setAction(Intent.ACTION_VIEW);
+		i.setData(data);
+		startActivity(i);
+	}
+	
+	public void magnetSearch(View v) {
+		Uri uri = Uri.parse("http://www.google.nl/search?&q=best+magnet+links+site");
+        Intent launchBrowser = new Intent(Intent.ACTION_VIEW, uri);
+        startActivity(launchBrowser);
 	}
 }
