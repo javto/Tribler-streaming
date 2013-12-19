@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-
-    <string name="app_name">Tribler\'s Video on Demand</string>
-    <string name="btn_select_torrent">Select a Torrent</string>
-
-</resources>
