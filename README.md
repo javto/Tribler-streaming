@@ -3,7 +3,7 @@
 
 Goal: video-on-demand for mobile devices without _any_ servers
 
-Solution: Combining Libtorrent and VLC into a single [.APK](https://github.com/javto/Tribler-streaming/blob/master/Work/APK/Tribler%20Streaming.apk)
+Solution: Combining Libtorrent and VLC into a single .APK
 
 Clone the repository to get the APK in Tribler-streaming/Work/APK/
 
