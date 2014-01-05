@@ -101,6 +101,7 @@ import android.view.animation.AnimationUtils;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.SeekBar;
+import android.widget.Toast;
 import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.TextView;
 
@@ -218,7 +219,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 	}
 
 	// TRIBLER
-	private static boolean torrentFile;
+	private static boolean torrentFile; // does it have a torrent loaded in libt
 	private static String contentName = "";
 	private static long fileLength;
 	private static int[] piecePriorities;
@@ -573,7 +574,9 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 			metaDataDone = false;
 			seekBufferCompleted = false;
 			inMetaDataWait = false;
-			// magnet = false;
+			magnet = false;
+			torrentFile = false;
+
 			asyncTaskRunning.remove("main");
 			// libTorrent().RemoveTorrent(contentName);
 			libTorrent().AbortSession();
@@ -1685,9 +1688,10 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 					: (max * progressSize - hackMb) / sizeMB);
 			// Log.v(TAG, "MAX: " + max + " | SIZE: " + sizeMB + " | progress: "
 			// + progress);
-			//Log.d("ASYNCTASKS RUNNING", asyncTaskRunning.toString());
+			// Log.d("ASYNCTASKS RUNNING", asyncTaskRunning.toString());
 			mSeekbar.setSecondaryProgress(progress);
-			if (findViewById(R.id.libtorrent_debug).getVisibility() == View.VISIBLE) {
+			if (findViewById(R.id.libtorrent_debug).getVisibility() == View.VISIBLE
+					&& !inMetaDataWait) {
 				((TextView) findViewById(R.id.libtorrent_debug))
 						.setText(libTorrent().GetTorrentStatusText(contentName)
 								+ "\n"
@@ -1949,7 +1953,9 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 				"deleting previous torrent cache if != lastContent");
 		contentName = magnet ? libTorrent().GetMagnetContentFileName(mLocation)
 				: libTorrent().GetTorrentName(mLocation);
-
+		if(contentName == null) {
+			showError("couldn't get content file name, please check internet connectivity and link");
+		}
 		Log.d("Deleting cache", "current content: " + contentName);
 		String contentNameDir = new File(savePath, contentName)
 				.getAbsolutePath();
@@ -2090,22 +2096,30 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 
 	private File addMagnet() {
 		magnet = true;
+		torrentFile = true;
 		Log.d(TAG, "GOT MAGNET: " + mLocation);
 		File savePath = getTorrentDownloadDir();
 		Log.d(TAG, "SAVEPATH: " + savePath.getAbsolutePath());
-		libTorrent().AddMagnet(savePath.getAbsolutePath(),
+		boolean success = libTorrent().AddMagnet(savePath.getAbsolutePath(),
 				StorageModes.ALLOCATE.ordinal(), mLocation);
-		return savePath;
+		if (success) {
+			return savePath;
+		} else {
+			return null;
+		}
 	}
 
 	// TRIBLER
 	private void waitForMetaData(File savePath) {
 		final String savePathString = savePath.getAbsolutePath();
 		final TextView loadingInfo = (TextView) findViewById(R.id.libtorrent_progress_text);
+		final int waitTime = 13000; // in ms
 		inMetaDataWait = true;
-		((TextView) findViewById(R.id.libtorrent_debug)).setText("Fetching Metadata...");
+		((TextView) findViewById(R.id.libtorrent_debug))
+				.setText("Fetching Metadata...");
 		new AsyncTask<Void, String, Void>() {
 			boolean running = true;
+			int counter = 0;
 
 			@Override
 			protected void onCancelled() {
@@ -2121,7 +2135,12 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 			@Override
 			protected Void doInBackground(Void... params) {
 				while (running) {
-					if(libTorrent().HasMetaData(savePathString, mLocation)) {
+					if (libTorrent().HasMetaData(savePathString, mLocation)) {
+						return null;
+					} else if (counter > waitTime) {
+						Log.e("TIMEOUT",
+								"waiting too long for metaData, check link and internet connection and try again");
+						counter = -1;
 						return null;
 					} else {
 						Log.d(TAG, "waiting for metaData: " + mLocation);
@@ -2130,6 +2149,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 						} catch (InterruptedException e) {
 							e.printStackTrace();
 						}
+						counter += 100;
 					}
 				}
 				return null;
@@ -2137,14 +2157,22 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 
 			@Override
 			protected void onPostExecute(Void result) {
-				Log.d("metaDataWait", "MetaData done");
-				inMetaDataWait = false;
-				metaDataDone = true;
-				onTriblerResume();
+				if (counter == -1) {
+					showError("waiting too long for metaData, check link and internet connection and try again");
+				} else {
+					Log.d("metaDataWait", "MetaData done");
+					inMetaDataWait = false;
+					metaDataDone = true;
+					onTriblerResume();
+				}
 				asyncTaskRunning.remove("waitForMetaData()");
 			}
-
 		}.execute();
+	}
+
+	private void showError(String msg) {
+		Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
+		finish();
 	}
 
 	/**
@@ -2213,13 +2241,19 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 				savePath = addTorrent();
 			} else { // mLocation.startsWith("magnet")
 				savePath = addMagnet();
-				if (!libTorrent().HasMetaData(savePath.getAbsolutePath(),
-						mLocation)) {
-					waitForMetaData(savePath);
+				if (savePath != null) {
+					if (!libTorrent().HasMetaData(savePath.getAbsolutePath(),
+							mLocation)) {
+						waitForMetaData(savePath);
+					} else {
+						metaDataDone = true;
+					}
+					Log.d("LOAD", "metadatadone: " + metaDataDone);
 				} else {
-					metaDataDone = true;
+					String errorMsg = "Adding unsuccesfull, check link and internet connection and try again";
+					Log.e("MAGNET ADD ERROR", errorMsg);
+					showError(errorMsg);
 				}
-				Log.d("LOAD", "metadatadone: " + metaDataDone);
 			}
 			if (metaDataDone) {
 				libTorrent().SetSavePath(savePath.getAbsolutePath());

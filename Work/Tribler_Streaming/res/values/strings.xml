@@ -377,7 +377,7 @@
     <string name="btn_search_magnet">Search on Google for videos&#8230;</string>
     <string name="show_debug">Toggle download debug</string>
     <string name="invisible">for internal use only</string>
-    <string name="intro_text">Search for videos by clicking one of the buttons below, or click one of the three example videos.</string>
+    <string name="intro_text">Search for videos by clicking one of the buttons below<a href="magnet:?xt=urn:btih:02767050e0be2fd4db9a2ad6c12416ac806ed6ed%26dn=Tear">here</a> to go to yahoo., or click one of the three example videos.</string>
 	<string name="intro_text_no_file_explorer">Search for videos by clicking the button below, or click one of the three example videos.</string>
 	
 	<string name="libt_progress_text">Loading&#8230;</string>

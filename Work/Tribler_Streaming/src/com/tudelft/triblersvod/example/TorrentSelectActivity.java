@@ -30,7 +30,7 @@ public class TorrentSelectActivity extends SherlockFragmentActivity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_torrentselect);
-		//((TextView) findViewById(R.id.torrentselect_text)).setMovementMethod(LinkMovementMethod.getInstance());
+		((TextView) findViewById(R.id.torrentselect_text)).setMovementMethod(LinkMovementMethod.getInstance());
 		String path = cleanUriPath(getIntent().getDataString());
 		if (!(path == null || path.equals("")))
 			tryStartingTorrent(path);
