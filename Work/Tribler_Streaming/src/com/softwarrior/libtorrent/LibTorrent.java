@@ -20,9 +20,12 @@ public class LibTorrent {
 	/**
 	 * 
 	 * @param ListenPort
-	 * @param UploadLimit in kb/s
-	 * @param DownloadLimit in kb/s
-	 * @param Encryption on or off
+	 * @param UploadLimit
+	 *            in kb/s
+	 * @param DownloadLimit
+	 *            in kb/s
+	 * @param Encryption
+	 *            on or off
 	 * @return
 	 */
 	public native boolean SetSession(int ListenPort, int UploadLimit,
@@ -169,7 +172,8 @@ public class LibTorrent {
 			String MagnetLink);
 
 	/**
-	 * Add a magnet link 
+	 * Add a magnet link
+	 * 
 	 * @param SavePath
 	 *            path to save torrent
 	 * @param StorageMode
@@ -181,38 +185,49 @@ public class LibTorrent {
 	 */
 	public native boolean AddMagnet(String SavePath, int StorageMode,
 			String MagnetLink);
-	
+
 	/**
 	 * returns true if the magnetlink has received the metadata
+	 * 
 	 * @param SavePath
 	 * @param MagnetLink
 	 * @return true if the magnetlink has received the metadata
 	 */
 	public native boolean HasMetaData(String SavePath, String MagnetLink);
-	
+
 	/**
-	 * fix for magnets, should be called after getting data
-	 * preq: metadata is available and savepath is set
+	 * fix for magnets, should be called after getting data preq: metadata is
+	 * available and savepath is set
+	 * 
 	 * @param MagnetLink
 	 * @return true
 	 */
-	public native String GetMagnetContentFileName( String MagnetLink);
-	
+	public native String GetMagnetContentFileName(String MagnetLink);
+
 	/**
 	 * @return the stored save path
 	 */
 	public native String GetSavePath();
-	
+
 	/**
 	 * Set the save path for future use
-	 * @param SavePath, the absolute save path
+	 * 
+	 * @param SavePath
+	 *            , the absolute save path
 	 * @returns true
 	 */
 	public native boolean SetSavePath(String SavePath);
-	
+
 	/**
 	 * Will return the number of torrents in the libtorrent queue
+	 * 
 	 * @return number of torrents in the libtorrent queue
 	 */
 	public native int GetNumberOfTorrents();
+
+	/**
+	 * @return true if the session is active or false if not(when it is paused,
+	 *         aborted or otherwise)
+	 */
+	public native boolean GetSessionState();
 }

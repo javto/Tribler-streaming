@@ -101,9 +101,9 @@ import android.view.animation.AnimationUtils;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
 import android.widget.SeekBar;
-import android.widget.Toast;
 import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.softwarrior.libtorrent.LibTorrent;
 import com.tudelft.triblersvod.example.FilePriority;
@@ -235,7 +235,10 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 	private static boolean metaDataDone = false;
 	private static boolean magnet = false;
 	private static ArrayList<String> asyncTaskRunning;
-
+	private static InitAsyncTask initAsyncTask;
+	private static WaitForMetaDataTask waitDataTask;
+	private static SeekTask seekTask;
+	
 	private LibTorrent libTorrent(int listenPort, int uploadLimit,
 			int downloadLimit, boolean encryption) {
 		return ((VLCApplication) getApplication()).getLibTorrent(listenPort,
@@ -481,75 +484,23 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 
 	}
 
-	protected void onPauseLite() {
-		/*
-		 * if (mSwitchingView) { Log.d(TAG, "mLocation = \"" + mLocation +
-		 * "\""); AudioServiceController.getInstance().showWithoutParse(
-		 * savedIndexPosition);
-		 * AudioServiceController.getInstance().unbindAudioService(this);
-		 * AudioPlayerFragment.start(this); return; }
-		 */
-
-		long time = mLibVLC.getTime();
-		long length = mLibVLC.getLength();
-		// remove saved position if in the last 5 seconds
-		if (length - time < 5000)
-			time = 0;
-		else
-			time -= 5000; // go back 5 seconds, to compensate loading time
-
-		/*
-		 * Pausing here generates errors because the vout is constantly trying
-		 * to refresh itself every 80ms while the surface is not accessible
-		 * anymore. To workaround that, we keep the last known position in the
-		 * playlist in savedIndexPosition to be able to restore it during
-		 * onResume().
-		 */
-		mLibVLC.stop();
-
-		// mSurface.setKeepScreenOn(false);
-
-		SharedPreferences preferences = getSharedPreferences(
-				PreferencesActivity.NAME, MODE_PRIVATE);
-		SharedPreferences.Editor editor = preferences.edit();
-		// Save position
-		if (time >= 0) {
-			if (MediaDatabase.getInstance(this).mediaItemExists(mLocation)) {
-				editor.putString(PreferencesActivity.LAST_MEDIA, mLocation);
-				MediaDatabase.getInstance(this).updateMedia(mLocation,
-						MediaDatabase.mediaColumn.MEDIA_TIME, time);
-			} else {
-				// Video file not in media library, store time just for
-				// onResume()
-				editor.putLong(PreferencesActivity.VIDEO_RESUME_TIME, time);
-			}
-		}
-		// Save selected subtitles
-		String subtitleList_serialized = null;
-		if (mSubtitleSelectedFiles.size() > 0) {
-			Log.d(TAG, "Saving selected subtitle files");
-			ByteArrayOutputStream bos = new ByteArrayOutputStream();
-			try {
-				ObjectOutputStream oos = new ObjectOutputStream(bos);
-				oos.writeObject(mSubtitleSelectedFiles);
-				subtitleList_serialized = bos.toString();
-			} catch (IOException e) {
-			}
-		}
-		editor.putString(PreferencesActivity.VIDEO_SUBTITLE_FILES,
-				subtitleList_serialized);
-
-		editor.commit();
-	}
-
 	@Override
 	protected void onStop() {
 		Log.d("LIFECYCLE", "onStop");
 		super.onStop();
+		Log.d("check", asyncTaskRunning.toString());
 		// TRIBLER
 		if (!contentName.isEmpty()) {
 			libTorrent().PauseTorrent(contentName);
-			libTorrent().PauseSession();
+		}
+		libTorrent().PauseSession();
+		//cancel asynctasks
+		if(asyncTaskRunning.contains("load()")) {
+			initAsyncTask.cancel(true);
+		} else if (asyncTaskRunning.contains("waitForMetaData()")) {
+			waitDataTask.cancel(true);
+		} else if (asyncTaskRunning.contains("setDownloadPrioritySeekTo()")) {
+			seekTask.cancel(true);
 		}
 	}
 
@@ -568,25 +519,25 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 		mAudioManager = null;
 
 		// TRIBLER
+		initCompleted = false;
+		metaDataDone = false;
+		seekBufferCompleted = false;
+		inMetaDataWait = false;
+		magnet = false;
+		torrentFile = false;
+		
 		if (!contentName.isEmpty()) {
-			// TODO move this up to onStop?
-			initCompleted = false;
-			metaDataDone = false;
-			seekBufferCompleted = false;
-			inMetaDataWait = false;
-			magnet = false;
-			torrentFile = false;
-
-			asyncTaskRunning.remove("main");
-			// libTorrent().RemoveTorrent(contentName);
-			libTorrent().AbortSession();
+			libTorrent().RemoveTorrent(contentName);
 		}
+		libTorrent().AbortSession();
+		asyncTaskRunning.remove("main");
 	}
 
 	@Override
 	protected void onResume() {
 		super.onResume();
 		Log.d("LIFECYCLE", "onResume");
+		Log.d("check", asyncTaskRunning.toString());
 		if (!inMetaDataWait) {
 			onTriblerResume();
 		}
@@ -599,6 +550,8 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 		Log.d("STATES", "inMetaDataWait: " + inMetaDataWait);
 		Log.d("STATES", "magnet: " + magnet);
 		Log.d("STATES", "torrentFile: " + torrentFile);
+		Log.d("STATES", "Number of torrents in liBT: " + libTorrent().GetNumberOfTorrents());
+		Log.d("STATES", "session active: " + libTorrent().GetSessionState());
 	}
 
 	// TRIBLER
@@ -613,12 +566,16 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 		// for debugging:
 		logStates();
 
-		if (!contentName.isEmpty()) {
-			Log.d(TAG, "start isn't empty");
+		Log.d("check", asyncTaskRunning.toString());
+		if(!libTorrent().GetSessionState()) {
 			libTorrent().ResumeSession();
+		}
+		if (!contentName.isEmpty() && initCompleted) {
+			Log.d(TAG, "start isn't empty");
+			
 			libTorrent().ResumeTorrent(contentName);
 		}
-
+		
 		/*
 		 * if the activity has been paused by pressing the power button,
 		 * pressing it again will show the lock screen. But onResume will also
@@ -1796,14 +1753,12 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 
 	// TRIBLER
 	private void setDownloadPrioritySeekTo(int progress) {
-		final int setDownloadProgress = progress;
-
 		long totalTime = mLibVLC.getLength();
 		if (totalTime != 0) {
 			double ratio = (double) progress / totalTime;
 
 			int numberOfPieces = lastPieceIndex - firstPieceIndex;
-			final int startNewDownloadHere = firstPieceIndex
+			int startNewDownloadHere = firstPieceIndex
 					+ ((int) Math.floor(numberOfPieces * ratio));
 
 			Log.d("SEEK TO", "startNewDownloadHere: " + startNewDownloadHere
@@ -1818,123 +1773,9 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 			}
 			libTorrent().SetPiecePriorities(contentName, piecePriorities);
 			Log.d("SEEK TO", "set piece priorities");
-
-			final TextView progressPercentageText = (TextView) findViewById(R.id.libtorrent_progress_percentage);
-			final TextView loadingInfo = (TextView) findViewById(R.id.libtorrent_progress_text);
-
-			new AsyncTask<Void, Integer, Void>() {
-				boolean running = true;
-
-				@Override
-				protected void onCancelled() {
-					running = false;
-				}
-
-				@Override
-				protected void onPreExecute() {
-					asyncTaskRunning.add("setDownloadPrioritySeekTo()");
-					Log.d("SEEK TO", "PreExecute of seek..."
-							+ getPiecePrioritiesString(piecePriorities));
-
-					if (mLibVLC.isPlaying()) {
-						mLibVLC.pause();
-					}
-					progressPercentageText.setText(0 + "%");
-
-					loadingInfo.setText("Seeking...");
-
-					findViewById(R.id.libtorrent_loading).setVisibility(
-							View.VISIBLE);
-				}
-
-				@Override
-				protected void onProgressUpdate(Integer... progress) {
-					int progressPercentage = progress[0];
-					progressPercentageText.setText(progressPercentage + "%");
-				}
-
-				@Override
-				protected Void doInBackground(Void... params) {
-					Thread.currentThread().setName("AsyncTask seekTo");
-					// if the torrent is in seeding state, it is already done,
-					// so we can skip the following parts and go to the
-					// postExecute
-					if (libTorrent().GetTorrentState(contentName) == TorrentState.SEEDING
-							.ordinal()) {
-						return null;
-					}
-					long pieceSize = libTorrent().GetPieceSize(contentName, 0);
-					int rightIndex = startNewDownloadHere
-							+ ((int) ((CHECKSIZE * 1.5) / pieceSize));
-					int piecesToCheck = (int) ((CHECKSIZE * 1.5) / pieceSize);
-					long newCheckSize = CHECKSIZE;
-					int progressPercentage;
-
-					if (rightIndex > lastPieceIndex) {
-						rightIndex = lastPieceIndex;
-						// the minus one is because the last piece is often
-						// smaller than standard, this way it won't hang on it
-						// too much.
-						piecesToCheck = rightIndex - startNewDownloadHere - 1;
-						newCheckSize = piecesToCheck * pieceSize;
-					}
-
-					while (running) {
-						Log.d("SEEK TO", "running in Async, newCheckSize: "
-								+ newCheckSize + " piecesToCheck: "
-								+ piecesToCheck + " startPiece: "
-								+ startNewDownloadHere);
-						long sum = 0;
-
-						for (int i = startNewDownloadHere; i <= rightIndex; i++) {
-							if (libTorrent().HavePiece(contentName, i)) {
-								// Log.d("SEEK TO", "have piece " + i);
-								sum += pieceSize;
-							}
-							if (sum >= newCheckSize) {
-								// wait a bit longer
-								try {
-									Thread.sleep(1000);
-								} catch (InterruptedException e) {
-									e.printStackTrace();
-								}
-								return null;
-							}
-						}
-						progressPercentage = (int) (((double) sum / (double) newCheckSize) * 100);
-						publishProgress(progressPercentage);
-						Log.d("SEEK TO", "sum: " + sum);
-						try {
-							Thread.sleep(500);
-						} catch (InterruptedException e) {
-							e.printStackTrace();
-						}
-					}
-					return null;
-				}
-
-				@Override
-				protected void onPostExecute(Void result) {
-					Log.d("SEEK TO", "postExecute seek..."
-							+ getPiecePrioritiesString(piecePriorities));
-
-					findViewById(R.id.libtorrent_loading).setVisibility(
-							View.GONE);
-					seekBufferCompleted = true;
-					mEndReached = false;
-					Log.d("SEEK TO", "setting time and overlay to: "
-							+ setDownloadProgress);
-					mLibVLC.setTime(setDownloadProgress);
-					Log.d("SEEK TO", "setting text and showing overlay");
-					showInfo(Util.millisToString(setDownloadProgress));
-					hideInfo();
-					Log.d("SEEK TO", "starting to play");
-					play();
-
-					asyncTaskRunning.remove("setDownloadPrioritySeekTo()");
-				}
-
-			}.execute();
+			seekTask = new SeekTask(progress, startNewDownloadHere);
+			seekTask.execute();
+			
 		} else {
 			Log.d(TAG, "No end time specified");
 		}
@@ -2041,9 +1882,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 			mLibVLC.stop();
 			findViewById(R.id.libtorrent_loading).setVisibility(View.VISIBLE);
 
-			int counter = 0; // cheating, because you don't wait until
-								// program action, but only a certain amount
-								// of time!
+			int counter = 0;
 			int sleeptime = 300;
 			while (libTorrent().GetTorrentProgressSize(contentName) < CHECKSIZEMB
 					&& counter <= 1500) {
@@ -2054,14 +1893,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 				if (libTorrent().GetTorrentState(contentName) != TorrentState.CHECKING_FILES
 						.ordinal()) {
 					Log.d(TAG, "breaking...it's not checking files anymore");
-					if (libTorrent().GetTorrentProgressSize(contentName) >= CHECKSIZEMB) {
-						Log.d("isAlreadyDownloaded", "returns true");
-						return true;
-					} else {
-						Log.d("isAlreadyDownloaded", "returns false");
-						return false;
-					}
-
+					break;
 				}
 				try {
 					Thread.sleep(sleeptime);
@@ -2070,8 +1902,13 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 				}
 				counter += sleeptime;
 			}
-			Log.d("isAlreadyDownloaded", "returns true");
-			return true;
+			if (libTorrent().GetTorrentProgressSize(contentName) >= CHECKSIZEMB) {
+				Log.d("isAlreadyDownloaded", "returns true");
+				return true;
+			} else {
+				Log.d("isAlreadyDownloaded", "returns false");
+				return false;
+			}
 		} else if (libTorrent().GetTorrentProgressSize(contentName) >= CHECKSIZEMB) {
 			Log.d("isAlreadyDownloaded", "returns true");
 			return true;
@@ -2111,63 +1948,11 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 
 	// TRIBLER
 	private void waitForMetaData(File savePath) {
-		final String savePathString = savePath.getAbsolutePath();
-		final TextView loadingInfo = (TextView) findViewById(R.id.libtorrent_progress_text);
-		final int waitTime = 13000; // in ms
 		inMetaDataWait = true;
 		((TextView) findViewById(R.id.libtorrent_debug))
 				.setText("Fetching Metadata...");
-		new AsyncTask<Void, String, Void>() {
-			boolean running = true;
-			int counter = 0;
-
-			@Override
-			protected void onCancelled() {
-				running = false;
-			}
-
-			@Override
-			protected void onPreExecute() {
-				asyncTaskRunning.add("waitForMetaData()");
-				loadingInfo.setText("Locating Video...");
-			}
-
-			@Override
-			protected Void doInBackground(Void... params) {
-				while (running) {
-					if (libTorrent().HasMetaData(savePathString, mLocation)) {
-						return null;
-					} else if (counter > waitTime) {
-						Log.e("TIMEOUT",
-								"waiting too long for metaData, check link and internet connection and try again");
-						counter = -1;
-						return null;
-					} else {
-						Log.d(TAG, "waiting for metaData: " + mLocation);
-						try {
-							Thread.sleep(100);
-						} catch (InterruptedException e) {
-							e.printStackTrace();
-						}
-						counter += 100;
-					}
-				}
-				return null;
-			}
-
-			@Override
-			protected void onPostExecute(Void result) {
-				if (counter == -1) {
-					showError("waiting too long for metaData, check link and internet connection and try again");
-				} else {
-					Log.d("metaDataWait", "MetaData done");
-					inMetaDataWait = false;
-					metaDataDone = true;
-					onTriblerResume();
-				}
-				asyncTaskRunning.remove("waitForMetaData()");
-			}
-		}.execute();
+		waitDataTask = new WaitForMetaDataTask(savePath.getAbsolutePath());
+		waitDataTask.execute();
 	}
 
 	private void showError(String msg) {
@@ -2241,7 +2026,9 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 				savePath = addTorrent();
 			} else { // mLocation.startsWith("magnet")
 				savePath = addMagnet();
+				logStates();
 				if (savePath != null) {
+					//TODO get rid of other torrent which isn't the new contentName if getNoT > 1
 					if (!libTorrent().HasMetaData(savePath.getAbsolutePath(),
 							mLocation)) {
 						waitForMetaData(savePath);
@@ -2296,130 +2083,324 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 				setMediaPostLoad(fromStart, itemTitle, intentPosition);
 				mLibVLC.playIndex(0);
 			} else {
-				final TextView progressPercentageText = (TextView) findViewById(R.id.libtorrent_progress_percentage);
-				final TextView loadingInfo = (TextView) findViewById(R.id.libtorrent_progress_text);
-
+				
 				Log.v("TRIBLER_DEBUG", "progress size = "
 						+ libTorrent().GetTorrentProgressSize(contentName));
-
-				new AsyncTask<Void, Integer, Void>() {
-					boolean running = true;
-
-					@Override
-					protected void onCancelled() {
-						running = false;
-					}
-
-					@Override
-					protected void onPreExecute() {
-						asyncTaskRunning.add("load()");
-						loadingInfo.setText("Loading Video...");
-					}
-
-					@Override
-					protected void onProgressUpdate(Integer... progress) {
-						int progressPercentage = progress[0];
-						progressPercentageText
-								.setText(progressPercentage + "%");
-					}
-
-					@Override
-					protected Void doInBackground(Void... params) {
-						Thread.currentThread().setName("AsyncTask ICCT");
-						int progressSize = 0;
-						int progressPercentage = 0;
-						boolean startedOnce = false;
-						int progressPercentageOld = -1;
-
-						while (running) {
-							progressSize = (int) libTorrent()
-									.GetTorrentProgressSize(contentName);
-
-							// for loading screen:
-							progressPercentage = (int) (((double) progressSize / (double) CHECKSIZEMB) * 100);
-
-							if (progressPercentage > progressPercentageOld) {
-								progressPercentageOld = progressPercentage;
-
-								// for debug:
-								Log.d(TAG,
-										"ICCT: progress:"
-												+ progressPercentage
-												+ "%, have first: "
-												+ libTorrent().HavePiece(
-														contentName,
-														firstPieceIndex)
-												+ ", have last: "
-												+ libTorrent().HavePiece(
-														contentName,
-														lastPieceIndex));
-								publishProgress(progressPercentage);
-							}
-
-							try {
-								Thread.sleep(100);
-							} catch (InterruptedException e) {
-								e.printStackTrace();
-							}
-
-							if (firstPieceIndex != -1 && lastPieceIndex != -1) {
-								if (!startedOnce) {
-									if (progressSize >= CHECKSIZEMB) {
-										mLibVLC.play();
-										mLibVLC.stop();
-										Log.d(TAG, "lets play");
-										Log.d(TAG,
-												"ICCT, length: "
-														+ mLibVLC.getLength()
-														+ ", have first: "
-														+ libTorrent()
-																.HavePiece(
-																		contentName,
-																		firstPieceIndex)
-														+ ", have last: "
-														+ libTorrent()
-																.HavePiece(
-																		contentName,
-																		lastPieceIndex));
-										mEndReached = false;
-										startedOnce = true;
-										return null;
-									}
-								}
-							}
-						}
-						return null;
-					}
-
-					@Override
-					protected void onPostExecute(Void result) {
-						Log.v(TAG, "onPostExecute");
-						findViewById(R.id.libtorrent_loading).setVisibility(
-								View.GONE);
-
-						for (int i = 0; i < piecePriorities.length; i++) {
-							piecePriorities[i] = FilePriority.NORMAL.ordinal();
-						}
-						String prios = "firstPiece: " + firstPieceIndex + "\n";
-						for (int i : piecePriorities) {
-							prios += "" + i;
-						}
-						Log.v(TAG, "PRIOSAFTER: " + prios + "\nLastpieceIndex "
-								+ lastPieceIndex);
-						libTorrent().SetPiecePriorities(contentName,
-								piecePriorities);
-						initCompleted = true;
-						seekBufferCompleted = true;
-
-						startPlayingAfterInit();
-						asyncTaskRunning.remove("load()");
-					}
-
-				}.execute();
+				initAsyncTask = new InitAsyncTask();
+				initAsyncTask.execute();
 			}
 		}
 	}
+	
+	private class SeekTask extends AsyncTask<Void, Integer, Void> {
+		boolean running = true;
+		TextView progressPercentageText = (TextView) findViewById(R.id.libtorrent_progress_percentage);
+		TextView loadingInfo = (TextView) findViewById(R.id.libtorrent_progress_text);
+		int setDownloadProgress;
+		int startNewDownloadHere;
+		
+		public SeekTask (int progress, int startNewDownloadHere) {
+			setDownloadProgress = progress;
+			this.startNewDownloadHere = startNewDownloadHere;
+		}
+		
+		@Override
+		protected void onCancelled() {
+			asyncTaskRunning.remove("setDownloadPrioritySeekTo()");
+			running = false;
+		}
 
+		@Override
+		protected void onPreExecute() {
+			asyncTaskRunning.add("setDownloadPrioritySeekTo()");
+			Log.d("SEEK TO", "PreExecute of seek..."
+					+ getPiecePrioritiesString(piecePriorities));
+
+			if (mLibVLC.isPlaying()) {
+				mLibVLC.pause();
+			}
+			progressPercentageText.setText(0 + "%");
+
+			loadingInfo.setText("Seeking...");
+
+			findViewById(R.id.libtorrent_loading).setVisibility(
+					View.VISIBLE);
+		}
+
+		@Override
+		protected void onProgressUpdate(Integer... progress) {
+			int progressPercentage = progress[0];
+			progressPercentageText.setText(progressPercentage + "%");
+		}
+
+		@Override
+		protected Void doInBackground(Void... params) {
+			Thread.currentThread().setName("AsyncTask seekTo");
+			// if the torrent is in seeding state, it is already done,
+			// so we can skip the following parts and go to the
+			// postExecute
+			if (libTorrent().GetTorrentState(contentName) == TorrentState.SEEDING
+					.ordinal()) {
+				return null;
+			}
+			long pieceSize = libTorrent().GetPieceSize(contentName, 0);
+			int rightIndex = startNewDownloadHere
+					+ ((int) ((CHECKSIZE * 1.5) / pieceSize));
+			int piecesToCheck = (int) ((CHECKSIZE * 1.5) / pieceSize);
+			long newCheckSize = CHECKSIZE;
+			int progressPercentage;
+
+			if (rightIndex > lastPieceIndex) {
+				rightIndex = lastPieceIndex;
+				// the minus one is because the last piece is often
+				// smaller than standard, this way it won't hang on it
+				// too much.
+				piecesToCheck = rightIndex - startNewDownloadHere - 1;
+				newCheckSize = piecesToCheck * pieceSize;
+			}
+
+			while (running) {
+				Log.d("SEEK TO", "running in Async, newCheckSize: "
+						+ newCheckSize + " piecesToCheck: "
+						+ piecesToCheck + " startPiece: "
+						+ startNewDownloadHere);
+				long sum = 0;
+
+				for (int i = startNewDownloadHere; i <= rightIndex; i++) {
+					if (libTorrent().HavePiece(contentName, i)) {
+						// Log.d("SEEK TO", "have piece " + i);
+						sum += pieceSize;
+					}
+					if (sum >= newCheckSize) {
+						// wait a bit longer
+						try {
+							Thread.sleep(1000);
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+						return null;
+					}
+				}
+				progressPercentage = (int) (((double) sum / (double) newCheckSize) * 100);
+				publishProgress(progressPercentage);
+				Log.d("SEEK TO", "sum: " + sum);
+				try {
+					Thread.sleep(500);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+			return null;
+		}
+
+		@Override
+		protected void onPostExecute(Void result) {
+			if(running) {
+				Log.d("SEEK TO", "postExecute seek..."
+						+ getPiecePrioritiesString(piecePriorities));
+
+				findViewById(R.id.libtorrent_loading).setVisibility(
+						View.GONE);
+				seekBufferCompleted = true;
+				mEndReached = false;
+				Log.d("SEEK TO", "setting time and overlay to: "
+						+ setDownloadProgress);
+				mLibVLC.setTime(setDownloadProgress);
+				Log.d("SEEK TO", "setting text and showing overlay");
+				showInfo(Util.millisToString(setDownloadProgress));
+				hideInfo();
+				Log.d("SEEK TO", "starting to play");
+				play();
+			}
+			asyncTaskRunning.remove("setDownloadPrioritySeekTo()");
+		}
+
+	}
+	
+	private class WaitForMetaDataTask extends AsyncTask<Void, String, Void> {
+		boolean running = true;
+		int counter = 0;
+		String savePathString;
+		TextView loadingInfo = (TextView) findViewById(R.id.libtorrent_progress_text);
+		int waitTime = 15000; // in ms
+		
+		public WaitForMetaDataTask(String savePath) {
+			savePathString = savePath;
+		}
+		
+		@Override
+		protected void onCancelled() {
+			asyncTaskRunning.remove("waitForMetaData()");
+			running = false;
+		}
+
+		@Override
+		protected void onPreExecute() {
+			asyncTaskRunning.add("waitForMetaData()");
+			loadingInfo.setText("Locating Video...");
+		}
+
+		@Override
+		protected Void doInBackground(Void... params) {
+			while (running) {
+				if (libTorrent().HasMetaData(savePathString, mLocation)) {
+					return null;
+				} else if (counter > waitTime) {
+					Log.e("TIMEOUT",
+							"waiting too long for metaData, check link and internet connection and try again");
+					counter = -1;
+					return null;
+				} else {
+					Log.d(TAG, "waiting for metaData: " + mLocation);
+					try {
+						Thread.sleep(100);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
+				counter += 100;
+			}
+			return null;
+		}
+
+		@Override
+		protected void onPostExecute(Void result) {
+			if(running) {
+				if (counter == -1) {
+					showError("waiting too long for metaData, check link and internet connection and try again");
+				} else {
+					Log.d("metaDataWait", "MetaData done");
+					inMetaDataWait = false;
+					metaDataDone = true;
+					onTriblerResume();
+				}
+			}
+			asyncTaskRunning.remove("waitForMetaData()");
+				
+		}
+	}
+	private class InitAsyncTask extends AsyncTask<Void, Integer, Void> {
+		boolean running = true;
+		TextView progressPercentageText = (TextView) findViewById(R.id.libtorrent_progress_percentage);
+		TextView loadingInfo = (TextView) findViewById(R.id.libtorrent_progress_text);
+
+		@Override
+		protected void onCancelled() {
+			running = false;
+			asyncTaskRunning.remove("load()");
+			findViewById(R.id.libtorrent_loading).setVisibility(
+					View.GONE);
+		}
+
+		@Override
+		protected void onPreExecute() {
+			asyncTaskRunning.add("load()");
+			loadingInfo.setText("Loading Video...");
+		}
+
+		@Override
+		protected void onProgressUpdate(Integer... progress) {
+			int progressPercentage = progress[0];
+			progressPercentageText
+					.setText(progressPercentage + "%");
+		}
+
+		@Override
+		protected Void doInBackground(Void... params) {
+			int progressSize = 0;
+			int progressPercentage = 0;
+			boolean startedOnce = false;
+			int progressPercentageOld = -1;
+
+			while (running) {
+				progressSize = (int) libTorrent()
+						.GetTorrentProgressSize(contentName);
+
+				// for loading screen:
+				progressPercentage = (int) (((double) progressSize / (double) CHECKSIZEMB) * 100);
+
+				if (progressPercentage > progressPercentageOld) {
+					progressPercentageOld = progressPercentage;
+
+					// for debug:
+					Log.d(TAG,
+							"ICCT: progress:"
+									+ progressPercentage
+									+ "%, have first: "
+									+ libTorrent().HavePiece(
+											contentName,
+											firstPieceIndex)
+									+ ", have last: "
+									+ libTorrent().HavePiece(
+											contentName,
+											lastPieceIndex));
+					publishProgress(progressPercentage);
+				}
+				if(isCancelled()) {
+					return null;
+				}
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+
+				if (firstPieceIndex != -1 && lastPieceIndex != -1) {
+					if (!startedOnce) {
+						if (progressSize >= CHECKSIZEMB) {
+							mLibVLC.play();
+							mLibVLC.stop();
+							Log.d(TAG, "lets play");
+							Log.d(TAG,
+									"ICCT, length: "
+											+ mLibVLC.getLength()
+											+ ", have first: "
+											+ libTorrent()
+													.HavePiece(
+															contentName,
+															firstPieceIndex)
+											+ ", have last: "
+											+ libTorrent()
+													.HavePiece(
+															contentName,
+															lastPieceIndex));
+							mEndReached = false;
+							startedOnce = true;
+							return null;
+						}
+					}
+				}
+			}
+			return null;
+		}
+
+		@Override
+		protected void onPostExecute(Void result) {
+			Log.v(TAG, "onPostExecute");
+			if(running) {
+				findViewById(R.id.libtorrent_loading).setVisibility(
+						View.GONE);
+
+				for (int i = 0; i < piecePriorities.length; i++) {
+					piecePriorities[i] = FilePriority.NORMAL.ordinal();
+				}
+				String prios = "firstPiece: " + firstPieceIndex + "\n";
+				for (int i : piecePriorities) {
+					prios += "" + i;
+				}
+				Log.v(TAG, "PRIOSAFTER: " + prios + "\nLastpieceIndex "
+						+ lastPieceIndex);
+				libTorrent().SetPiecePriorities(contentName,
+						piecePriorities);
+				initCompleted = true;
+				seekBufferCompleted = true;
+
+				startPlayingAfterInit();
+			}
+			asyncTaskRunning.remove("load()");
+		}
+	}
+	
 	private void startPlayingAfterInit() {
 		mLibVLC.stop();
 		// onPause();
