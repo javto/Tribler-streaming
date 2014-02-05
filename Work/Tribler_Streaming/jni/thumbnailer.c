@@ -155,6 +155,7 @@ jbyteArray Java_org_videolan_libvlc_LibVLC_getThumbnail(JNIEnv *env, jobject thi
 
     /* Create a media player playing environment */
     libvlc_media_player_t *mp = libvlc_media_player_new(libvlc);
+    libvlc_media_player_set_video_title_display(mp, libvlc_position_disable, 0);
 
     libvlc_media_t *m = new_media(instance, env, thiz, filePath, true, false);
     if (m == NULL)
@@ -263,12 +264,12 @@ jbyteArray Java_org_videolan_libvlc_LibVLC_getThumbnail(JNIEnv *env, jobject thi
     libvlc_media_player_play(mp);
     libvlc_media_player_set_position(mp, THUMBNAIL_POSITION);
 
-    int loops = 100;
-    for (;;) {
-        float pos = libvlc_media_player_get_position(mp);
-        if (pos > THUMBNAIL_POSITION || !loops--)
+    const int wait_time = 50000;
+    const int max_attempts = 100;
+    for (int i = 0; i < max_attempts; ++i) {
+        if (libvlc_media_player_is_playing(mp) && libvlc_media_player_get_position(mp) >= THUMBNAIL_POSITION)
             break;
-        usleep(50000);
+        usleep(wait_time);
     }
 
     /* Wait for the thumbnail to be generated. */

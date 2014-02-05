@@ -26,7 +26,9 @@ import java.util.List;
 
 import org.videolan.vlc.Util;
 import org.videolan.vlc.VLCApplication;
+import org.videolan.vlc.gui.audio.AudioAlbumsSongsFragment;
 import org.videolan.vlc.gui.audio.AudioBrowserFragment;
+import org.videolan.vlc.gui.audio.EqualizerFragment;
 import org.videolan.vlc.gui.video.VideoGridFragment;
 
 import android.graphics.drawable.Drawable;
@@ -67,10 +69,10 @@ public class SidebarAdapter extends BaseAdapter {
 
     static {
         SidebarEntry entries2[] = {
-            new SidebarEntry( "video", R.string.video, R.drawable.header_icon_video ),
-            new SidebarEntry( "audio", R.string.audio, R.drawable.header_icon_audio ),
-            new SidebarEntry( "directories", R.string.directories, R.drawable.ic_folder ),
-            new SidebarEntry( "history", R.string.history, android.R.drawable.ic_menu_recent_history ),
+            new SidebarEntry( "video", R.string.video, R.drawable.video ),
+            new SidebarEntry( "audio", R.string.audio, R.drawable.audio ),
+            new SidebarEntry( "directories", R.string.directories, R.drawable.folder ),
+            new SidebarEntry( "history", R.string.history, R.drawable.time ),
             //new SidebarEntry( "bookmarks", R.string.bookmarks, R.drawable.ic_bookmarks ),
             //new SidebarEntry( "playlists", R.string.playlists, R.drawable.icon ),
         };
@@ -130,7 +132,13 @@ public class SidebarAdapter extends BaseAdapter {
             f = new DirectoryViewFragment();
         } else if(id.equals("history")) {
             f = new HistoryFragment();
-        } else { /* TODO */
+        } else if(id.equals("albumsSongs")) {
+            f = new AudioAlbumsSongsFragment();
+        } else if(id.equals("equalizer")) {
+            f = new EqualizerFragment();
+        }
+        else
+        { /* TODO */
             f = new AboutLicenceFragment();
         }
         f.setRetainInstance(true);

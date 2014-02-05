@@ -26,17 +26,17 @@ import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 
 import org.videolan.android.ui.SherlockGridFragment;
+import org.videolan.libvlc.Media;
 import org.videolan.vlc.AudioServiceController;
-import org.videolan.vlc.Media;
 import org.videolan.vlc.MediaDatabase;
+import org.videolan.vlc.MediaGroup;
 import org.videolan.vlc.MediaLibrary;
 import org.videolan.vlc.Thumbnailer;
 import org.videolan.vlc.Util;
 import org.videolan.vlc.VlcRunnable;
 import org.videolan.vlc.WeakHandler;
 import org.videolan.vlc.gui.CommonDialogs;
-import org.videolan.vlc.gui.PreferencesActivity;
-import org.videolan.vlc.gui.audio.AudioPlayerFragment;
+import org.videolan.vlc.gui.MainActivity;
 import org.videolan.vlc.interfaces.ISortable;
 
 import android.annotation.TargetApi;
@@ -46,7 +46,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.os.Build;
 import android.os.Bundle;
@@ -71,401 +70,401 @@ import android.widget.TextView;
 
 import com.tudelft.triblersvod.example.R;
 
-public class VideoGridFragment extends SherlockGridFragment implements
-		ISortable {
+public class VideoGridFragment extends SherlockGridFragment implements ISortable {
 
-	public final static String TAG = "VLC/VideoListFragment";
+    public final static String TAG = "VLC/VideoListFragment";
 
-	protected static final String ACTION_SCAN_START = "org.videolan.vlc.gui.ScanStart";
-	protected static final String ACTION_SCAN_STOP = "org.videolan.vlc.gui.ScanStop";
-	protected static final int UPDATE_ITEM = 0;
+    protected static final String ACTION_SCAN_START = "org.videolan.vlc.gui.ScanStart";
+    protected static final String ACTION_SCAN_STOP = "org.videolan.vlc.gui.ScanStop";
+    protected static final int UPDATE_ITEM = 0;
 
-	/* Constants used to switch from Grid to List and vice versa */
-	// FIXME If you know a way to do this in pure XML please do it!
-	private static final int GRID_ITEM_WIDTH_DP = 156;
-	private static final int GRID_HORIZONTAL_SPACING_DP = 20;
-	private static final int GRID_VERTICAL_SPACING_DP = 20;
-	private static final int GRID_STRETCH_MODE = GridView.STRETCH_COLUMN_WIDTH;
-	private static final int LIST_HORIZONTAL_SPACING_DP = 0;
-	private static final int LIST_VERTICAL_SPACING_DP = 10;
-	private static final int LIST_STRETCH_MODE = GridView.STRETCH_COLUMN_WIDTH;
+    /* Constants used to switch from Grid to List and vice versa */
+    //FIXME If you know a way to do this in pure XML please do it!
+    private static final int GRID_ITEM_WIDTH_DP = 156;
+    private static final int GRID_HORIZONTAL_SPACING_DP = 20;
+    private static final int GRID_VERTICAL_SPACING_DP = 20;
+    private static final int GRID_STRETCH_MODE = GridView.STRETCH_COLUMN_WIDTH;
+    private static final int LIST_HORIZONTAL_SPACING_DP = 0;
+    private static final int LIST_VERTICAL_SPACING_DP = 10;
+    private static final int LIST_STRETCH_MODE = GridView.STRETCH_COLUMN_WIDTH;
 
-	protected LinearLayout mLayoutFlipperLoading;
-	protected TextView mTextViewNomedia;
-	protected Media mItemToUpdate;
-	protected final CyclicBarrier mBarrier = new CyclicBarrier(2);
+    protected LinearLayout mLayoutFlipperLoading;
+    protected TextView mTextViewNomedia;
+    protected Media mItemToUpdate;
+    protected String mGroup;
+    protected final CyclicBarrier mBarrier = new CyclicBarrier(2);
 
-	private VideoListAdapter mVideoAdapter;
-	private MediaLibrary mMediaLibrary;
-	private Thumbnailer mThumbnailer;
-	private VideoGridAnimator mAnimator;
+    private VideoListAdapter mVideoAdapter;
+    private MediaLibrary mMediaLibrary;
+    private Thumbnailer mThumbnailer;
+    private VideoGridAnimator mAnimator;
 
-	/* All subclasses of Fragment must include a public empty constructor. */
-	public VideoGridFragment() {
-	}
+    /* All subclasses of Fragment must include a public empty constructor. */
+    public VideoGridFragment() { }
 
-	@Override
-	public void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
-		mVideoAdapter = new VideoListAdapter(getActivity(), this);
-		mMediaLibrary = MediaLibrary.getInstance(getActivity());
-		setListAdapter(mVideoAdapter);
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
 
-		/* Load the thumbnailer */
-		FragmentActivity activity = getActivity();
-		if (activity != null)
-			mThumbnailer = new Thumbnailer(activity, activity
-					.getWindowManager().getDefaultDisplay());
-	}
+        mVideoAdapter = new VideoListAdapter(getActivity(), this);
+        mMediaLibrary = MediaLibrary.getInstance(getActivity());
+        setListAdapter(mVideoAdapter);
 
-	@Override
-	public View onCreateView(LayoutInflater inflater, ViewGroup container,
-			Bundle savedInstanceState) {
-		View v = inflater.inflate(R.layout.video_grid, container, false);
+        /* Load the thumbnailer */
+        FragmentActivity activity = getActivity();
+        if (activity != null)
+            mThumbnailer = new Thumbnailer(activity, activity.getWindowManager().getDefaultDisplay());
+    }
 
-		// init the information for the scan (1/2)
-		mLayoutFlipperLoading = (LinearLayout) v
-				.findViewById(R.id.layout_flipper_loading);
-		mTextViewNomedia = (TextView) v.findViewById(R.id.textview_nomedia);
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)
+    {
+        getSherlockActivity().getSupportActionBar().setTitle(R.string.video);
 
-		return v;
-	}
+        View v = inflater.inflate(R.layout.video_grid, container, false);
 
-	@Override
-	public void onViewCreated(View view, Bundle savedInstanceState) {
-		super.onViewCreated(view, savedInstanceState);
-		registerForContextMenu(getGridView());
+        // init the information for the scan (1/2)
+        mLayoutFlipperLoading = (LinearLayout) v.findViewById(R.id.layout_flipper_loading);
+        mTextViewNomedia = (TextView) v.findViewById(R.id.textview_nomedia);
 
-		// init the information for the scan (2/2)
-		IntentFilter filter = new IntentFilter();
-		filter.addAction(ACTION_SCAN_START);
-		filter.addAction(ACTION_SCAN_STOP);
-		getActivity()
-				.registerReceiver(messageReceiverVideoListFragment, filter);
-		Log.i(TAG,
-				"mMediaLibrary.isWorking() "
-						+ Boolean.toString(mMediaLibrary.isWorking()));
-		if (mMediaLibrary.isWorking()) {
-			actionScanStart(getActivity().getApplicationContext());
-		}
+        return v;
+    }
 
-		mAnimator = new VideoGridAnimator(getGridView());
-	}
+    @Override
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        registerForContextMenu(getGridView());
 
-	@Override
-	public void onPause() {
-		super.onPause();
-		mMediaLibrary.removeUpdateHandler(mHandler);
+        // init the information for the scan (2/2)
+        IntentFilter filter = new IntentFilter();
+        filter.addAction(ACTION_SCAN_START);
+        filter.addAction(ACTION_SCAN_STOP);
+        getActivity().registerReceiver(messageReceiverVideoListFragment, filter);
+        Log.i(TAG,"mMediaLibrary.isWorking() " + Boolean.toString(mMediaLibrary.isWorking()));
+        if (mMediaLibrary.isWorking()) {
+            actionScanStart(getActivity().getApplicationContext());
+        }
 
-		/* Stop the thumbnailer */
-		if (mThumbnailer != null)
-			mThumbnailer.stop();
-	}
+        mAnimator = new VideoGridAnimator(getGridView());
+    }
 
-	@Override
-	public void onResume() {
-		super.onResume();
-		// Get & highlight the last media
-		SharedPreferences preferences = getActivity().getSharedPreferences(
-				PreferencesActivity.NAME, Context.MODE_PRIVATE);
-		String lastPath = preferences.getString(PreferencesActivity.LAST_MEDIA,
-				null);
-		HashMap<String, Long> times = MediaDatabase.getInstance(getActivity())
-				.getVideoTimes(getActivity());
-		mVideoAdapter.setLastMedia(lastPath, times);
-		mVideoAdapter.notifyDataSetChanged();
-		updateList();
-		mMediaLibrary.addUpdateHandler(mHandler);
-		updateViewMode();
-		mAnimator.animate();
+    @Override
+    public void onPause() {
+        super.onPause();
+        mMediaLibrary.removeUpdateHandler(mHandler);
 
-		/* Start the thumbnailer */
-		if (mThumbnailer != null)
-			mThumbnailer.start(this);
-	}
+        /* Stop the thumbnailer */
+        if (mThumbnailer != null)
+            mThumbnailer.stop();
+    }
 
-	@Override
-	public void onDestroyView() {
-		getActivity().unregisterReceiver(messageReceiverVideoListFragment);
-		super.onDestroyView();
-	}
+    @Override
+    public void onResume() {
+        super.onResume();
+        //Get & set times
+        HashMap<String, Long> times = MediaDatabase.getInstance(getActivity()).getVideoTimes(getActivity());
+        mVideoAdapter.setTimes(times);
+        mVideoAdapter.notifyDataSetChanged();
+        updateList();
+        mMediaLibrary.addUpdateHandler(mHandler);
+        updateViewMode();
+        mAnimator.animate();
 
-	@Override
-	public void onDestroy() {
-		super.onDestroy();
-		if (mThumbnailer != null)
-			mThumbnailer.clearJobs();
-		mBarrier.reset();
-		mVideoAdapter.clear();
-	}
+        /* Start the thumbnailer */
+        if (mThumbnailer != null)
+            mThumbnailer.start(this);
+    }
 
-	private boolean hasSpaceForGrid(View v) {
-		final Activity activity = getActivity();
-		if (activity == null)
-			return true;
+    @Override
+    public void onDestroyView() {
+        getActivity().unregisterReceiver(messageReceiverVideoListFragment);
+        super.onDestroyView();
+    }
 
-		final GridView grid = (GridView) v.findViewById(android.R.id.list);
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if (mThumbnailer != null)
+            mThumbnailer.clearJobs();
+        mBarrier.reset();
+        mVideoAdapter.clear();
+    }
 
-		DisplayMetrics outMetrics = new DisplayMetrics();
-		activity.getWindowManager().getDefaultDisplay().getMetrics(outMetrics);
+    private boolean hasSpaceForGrid(View v) {
+        final Activity activity = getActivity();
+        if (activity == null)
+            return true;
 
-		final int itemWidth = Util.convertDpToPx(GRID_ITEM_WIDTH_DP);
-		final int horizontalspacing = Util
-				.convertDpToPx(GRID_HORIZONTAL_SPACING_DP);
-		final int width = grid.getPaddingLeft() + grid.getPaddingRight()
-				+ horizontalspacing + (itemWidth * 2);
-		if (width < outMetrics.widthPixels)
-			return true;
-		return false;
-	}
+        final GridView grid = (GridView)v.findViewById(android.R.id.list);
 
-	private void updateViewMode() {
-		if (getView() == null || getActivity() == null) {
-			Log.w(TAG, "Unable to setup the view");
-			return;
-		}
+        DisplayMetrics outMetrics = new DisplayMetrics();
+        activity.getWindowManager().getDefaultDisplay().getMetrics(outMetrics);
 
-		GridView gv = (GridView) getView().findViewById(android.R.id.list);
+        final int itemWidth = Util.convertDpToPx(GRID_ITEM_WIDTH_DP);
+        final int horizontalspacing = Util.convertDpToPx(GRID_HORIZONTAL_SPACING_DP);
+        final int width = grid.getPaddingLeft() + grid.getPaddingRight() + horizontalspacing + (itemWidth * 2);
+        if (width < outMetrics.widthPixels)
+            return true;
+        return false;
+    }
 
-		// Compute the left/right padding dynamically
-		DisplayMetrics outMetrics = new DisplayMetrics();
-		getActivity().getWindowManager().getDefaultDisplay()
-				.getMetrics(outMetrics);
-		int sidePadding = (int) (outMetrics.widthPixels / 100
-				* Math.pow(outMetrics.density, 3) / 2);
-		sidePadding = Math.max(0, Math.min(100, sidePadding));
-		gv.setPadding(sidePadding, gv.getPaddingTop(), sidePadding,
-				gv.getPaddingBottom());
+    private void updateViewMode() {
+        if (getView() == null || getActivity() == null) {
+            Log.w(TAG, "Unable to setup the view");
+            return;
+        }
 
-		// Select between grid or list
-		if (hasSpaceForGrid(getView())) {
-			Log.d(TAG, "Switching to grid mode");
-			gv.setNumColumns(GridView.AUTO_FIT);
-			gv.setStretchMode(GRID_STRETCH_MODE);
-			gv.setHorizontalSpacing(Util
-					.convertDpToPx(GRID_HORIZONTAL_SPACING_DP));
-			gv.setVerticalSpacing(Util.convertDpToPx(GRID_VERTICAL_SPACING_DP));
-			gv.setColumnWidth(Util.convertDpToPx(GRID_ITEM_WIDTH_DP));
-			mVideoAdapter.setListMode(false);
-		} else {
-			Log.d(TAG, "Switching to list mode");
-			gv.setNumColumns(1);
-			gv.setStretchMode(LIST_STRETCH_MODE);
-			gv.setHorizontalSpacing(LIST_HORIZONTAL_SPACING_DP);
-			gv.setVerticalSpacing(Util.convertDpToPx(LIST_VERTICAL_SPACING_DP));
-			mVideoAdapter.setListMode(true);
-		}
-	}
+        GridView gv = (GridView)getView().findViewById(android.R.id.list);
 
-	@Override
-	public void onConfigurationChanged(Configuration newConfig) {
-		super.onConfigurationChanged(newConfig);
+        // Compute the left/right padding dynamically
+        DisplayMetrics outMetrics = new DisplayMetrics();
+        getActivity().getWindowManager().getDefaultDisplay().getMetrics(outMetrics);
+        int sidePadding = (int) (outMetrics.widthPixels / 100 * Math.pow(outMetrics.density, 3) / 2);
+        sidePadding = Math.max(0, Math.min(100, sidePadding));
+        gv.setPadding(sidePadding, gv.getPaddingTop(), sidePadding, gv.getPaddingBottom());
 
-		if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE
-				|| newConfig.orientation == Configuration.ORIENTATION_PORTRAIT) {
-			updateViewMode();
-		}
-	}
+        // Select between grid or list
+        if (hasSpaceForGrid(getView())) {
+            Log.d(TAG, "Switching to grid mode");
+            gv.setNumColumns(GridView.AUTO_FIT);
+            gv.setStretchMode(GRID_STRETCH_MODE);
+            gv.setHorizontalSpacing(Util.convertDpToPx(GRID_HORIZONTAL_SPACING_DP));
+            gv.setVerticalSpacing(Util.convertDpToPx(GRID_VERTICAL_SPACING_DP));
+            gv.setColumnWidth(Util.convertDpToPx(GRID_ITEM_WIDTH_DP));
+            mVideoAdapter.setListMode(false);
+        } else {
+            Log.d(TAG, "Switching to list mode");
+            gv.setNumColumns(1);
+            gv.setStretchMode(LIST_STRETCH_MODE);
+            gv.setHorizontalSpacing(LIST_HORIZONTAL_SPACING_DP);
+            gv.setVerticalSpacing(Util.convertDpToPx(LIST_VERTICAL_SPACING_DP));
+            mVideoAdapter.setListMode(true);
+        }
+    }
 
-	@Override
-	public void onGridItemClick(GridView l, View v, int position, long id) {
-		playVideo(position, false);
-		super.onGridItemClick(l, v, position, id);
-	}
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
 
-	protected void playVideo(int position, boolean fromStart) {
-		Media item = (Media) getListAdapter().getItem(position);
-		Log.v("VLC_ORIGINAL", "--ITEM LOCATION: " + item.getLocation());
-		VideoPlayerActivity.start(getActivity(), item.getLocation(), fromStart);
-	}
+        if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE ||
+            newConfig.orientation == Configuration.ORIENTATION_PORTRAIT) {
+            updateViewMode();
+        }
+    }
 
-	protected void playAudio(int position) {
-		Media item = (Media) getListAdapter().getItem(position);
-		AudioServiceController.getInstance().load(item.getLocation(), true);
-		AudioPlayerFragment.start(getActivity());
-	}
+    @Override
+    public void onGridItemClick(GridView l, View v, int position, long id) {
+        Media media = (Media) getListAdapter().getItem(position);
+        if (media instanceof MediaGroup) {
+            VideoGridFragment videoList = new VideoGridFragment();
+            videoList.setGroup(media.getTitle());
+            MainActivity.ShowFragment(getActivity(), "videolist", videoList);
+        }
+        else
+            playVideo(media, false);
+        super.onGridItemClick(l, v, position, id);
+    }
 
-	private boolean handleContextItemSelected(MenuItem menu, int position) {
-		int itemId = menu.getItemId();
-		if (itemId == R.id.video_list_play) {
-			playVideo(position, false);
-			return true;
-		} else if (itemId == R.id.video_list_play_from_start) {
-			playVideo(position, true);
-			return true;
-		} else if (itemId == R.id.video_list_play_audio) {
-			playAudio(position);
-			return true;
-		} else if (itemId == R.id.video_list_info) {
-			Intent intent = new Intent(getActivity(), MediaInfoActivity.class);
-			intent.putExtra("itemLocation", mVideoAdapter.getItem(position)
-					.getLocation());
-			startActivity(intent);
-			return true;
-		} else if (itemId == R.id.video_list_delete) {
-			Media media = mVideoAdapter.getItem(position);
-			AlertDialog alertDialog = CommonDialogs.deleteMedia(getActivity(),
-					media.getLocation(), new VlcRunnable(media) {
-						@Override
-						public void run(Object o) {
-							Media media = (Media) o;
-							mMediaLibrary.getMediaItems().remove(media);
-							mVideoAdapter.remove(media);
-						}
-					});
-			alertDialog.show();
-			return true;
-		}
-		return false;
-	}
+    protected void playVideo(Media media, boolean fromStart) {
+        VideoPlayerActivity.start(getActivity(), media.getLocation(), fromStart);
+    }
 
-	@Override
-	public void onCreateContextMenu(ContextMenu menu, View v,
-			ContextMenuInfo menuInfo) {
-		MenuInflater inflater = getActivity().getMenuInflater();
-		inflater.inflate(R.menu.video_list, menu);
-	}
+    protected void playAudio(Media media) {
+        AudioServiceController.getInstance().load(media.getLocation(), true);
+    }
 
-	@Override
-	public boolean onContextItemSelected(MenuItem menu) {
-		AdapterContextMenuInfo info = (AdapterContextMenuInfo) menu
-				.getMenuInfo();
-		if (info != null && handleContextItemSelected(menu, info.position))
-			return true;
-		return super.onContextItemSelected(menu);
-	}
+    private boolean handleContextItemSelected(MenuItem menu, int position) {
+        Media media = mVideoAdapter.getItem(position);
+        if (media instanceof MediaGroup)
+            return true;
+        switch (menu.getItemId())
+        {
+        case R.id.video_list_play:
+            playVideo(media, false);
+            return true;
+        case R.id.video_list_play_from_start:
+            playVideo(media, true);
+            return true;
+        case R.id.video_list_play_audio:
+            playAudio(media);
+            return true;
+        case R.id.video_list_info:
+            Intent intent = new Intent(getActivity(), MediaInfoActivity.class);
+            intent.putExtra("itemLocation", media.getLocation());
+            startActivity(intent);
+            return true;
+        case R.id.video_list_delete:
+            AlertDialog alertDialog = CommonDialogs.deleteMedia(
+                    getActivity(),
+                    media.getLocation(),
+                    new VlcRunnable(media) {
+                        @Override
+                        public void run(Object o) {
+                            Media media = (Media) o;
+                            mMediaLibrary.getMediaItems().remove(media);
+                            mVideoAdapter.remove(media);
+                        }
+                    });
+            alertDialog.show();
+            return true;
+        }
+        return false;
+    }
 
-	@TargetApi(Build.VERSION_CODES.HONEYCOMB)
-	public void onContextPopupMenu(View anchor, final int position) {
-		if (!Util.isHoneycombOrLater()) {
-			// Call the "classic" context menu
-			anchor.performLongClick();
-			return;
-		}
+    @Override
+    public void onCreateContextMenu(ContextMenu menu, View v, ContextMenuInfo menuInfo) {
+        MenuInflater inflater = getActivity().getMenuInflater();
+        inflater.inflate(R.menu.video_list, menu);
+    }
 
-		PopupMenu popupMenu = new PopupMenu(getActivity(), anchor);
-		popupMenu.getMenuInflater().inflate(R.menu.video_list,
-				popupMenu.getMenu());
-		popupMenu.setOnMenuItemClickListener(new OnMenuItemClickListener() {
-			@Override
-			public boolean onMenuItemClick(MenuItem item) {
-				return handleContextItemSelected(item, position);
-			}
-		});
-		popupMenu.show();
-	}
+    @Override
+    public boolean onContextItemSelected(MenuItem menu) {
+        AdapterContextMenuInfo info = (AdapterContextMenuInfo) menu.getMenuInfo();
+        if (info != null && handleContextItemSelected(menu, info.position))
+            return true;
+        return super.onContextItemSelected(menu);
+    }
 
-	/**
-	 * Handle changes on the list
-	 */
-	private Handler mHandler = new VideoListHandler(this);
+    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
+    public void onContextPopupMenu(View anchor, final int position) {
+        if (!Util.isHoneycombOrLater()) {
+            // Call the "classic" context menu
+            anchor.performLongClick();
+            return;
+        }
 
-	private static class VideoListHandler extends
-			WeakHandler<VideoGridFragment> {
-		public VideoListHandler(VideoGridFragment owner) {
-			super(owner);
-		}
+        PopupMenu popupMenu = new PopupMenu(getActivity(), anchor);
+        popupMenu.getMenuInflater().inflate(R.menu.video_list, popupMenu.getMenu());
+        popupMenu.setOnMenuItemClickListener(new OnMenuItemClickListener() {
+            @Override
+            public boolean onMenuItemClick(MenuItem item) {
+                return handleContextItemSelected(item, position);
+            }
+        });
+        popupMenu.show();
+    }
 
-		@Override
-		public void handleMessage(Message msg) {
-			VideoGridFragment fragment = getOwner();
-			if (fragment == null)
-				return;
+    /**
+     * Handle changes on the list
+     */
+    private Handler mHandler = new VideoListHandler(this);
 
-			switch (msg.what) {
-			case UPDATE_ITEM:
-				fragment.updateItem();
-				break;
-			case MediaLibrary.MEDIA_ITEMS_UPDATED:
-				// Don't update the adapter while the layout animation is
-				// running
-				if (fragment.mAnimator.isAnimationDone())
-					fragment.updateList();
-				else
-					sendEmptyMessageDelayed(msg.what, 500);
-				break;
-			}
-		}
-	};
+    private static class VideoListHandler extends WeakHandler<VideoGridFragment> {
+        public VideoListHandler(VideoGridFragment owner) {
+            super(owner);
+        }
 
-	private void updateItem() {
-		mVideoAdapter.update(mItemToUpdate);
-		try {
-			mBarrier.await();
-		} catch (InterruptedException e) {
-		} catch (BrokenBarrierException e) {
-		}
-	}
+        @Override
+        public void handleMessage(Message msg) {
+            VideoGridFragment fragment = getOwner();
+            if(fragment == null) return;
 
-	private void updateList() {
-		List<Media> itemList = mMediaLibrary.getVideoItems();
+            switch (msg.what) {
+            case UPDATE_ITEM:
+                fragment.updateItem();
+                break;
+            case MediaLibrary.MEDIA_ITEMS_UPDATED:
+                // Don't update the adapter while the layout animation is running
+                if (fragment.mAnimator.isAnimationDone())
+                    fragment.updateList();
+                else
+                    sendEmptyMessageDelayed(msg.what, 500);
+                break;
+            }
+        }
+    };
 
-		if (mThumbnailer != null)
-			mThumbnailer.clearJobs();
-		else
-			Log.w(TAG, "Can't generate thumbnails, the thumbnailer is missing");
+    private void updateItem() {
+        mVideoAdapter.update(mItemToUpdate);
+        try {
+            mBarrier.await();
+        } catch (InterruptedException e) {
+        } catch (BrokenBarrierException e) {
+        }
+    }
 
-		mVideoAdapter.clear();
+    private void updateList() {
+        List<Media> itemList = mMediaLibrary.getVideoItems();
 
-		if (itemList.size() > 0) {
-			for (Media item : itemList) {
-				if (item.getType() == Media.TYPE_VIDEO) {
-					mVideoAdapter.add(item);
-					if (mThumbnailer != null && item.getPicture() == null
-							&& !item.isPictureParsed())
-						mThumbnailer.addJob(item);
-				}
-			}
-			mVideoAdapter.sort();
-		}
-	}
+        if (mThumbnailer != null)
+            mThumbnailer.clearJobs();
+        else
+            Log.w(TAG, "Can't generate thumbnails, the thumbnailer is missing");
 
-	@Override
-	public void sortBy(int sortby) {
-		mVideoAdapter.sortBy(sortby);
-	}
+        mVideoAdapter.clear();
 
-	public void setItemToUpdate(Media item) {
-		mItemToUpdate = item;
-		mHandler.sendEmptyMessage(UPDATE_ITEM);
-	}
+        if (itemList.size() > 0) {
+            if (mGroup != null || itemList.size() <= 10) {
+                for (Media item : itemList) {
+                    if (mGroup == null || item.getTitle().startsWith(mGroup)) {
+                        mVideoAdapter.add(item);
+                        if (mThumbnailer != null)
+                            mThumbnailer.addJob(item);
+                    }
+                }
+            }
+            else {
+                List<MediaGroup> groups = MediaGroup.group(itemList);
+                for (MediaGroup item : groups) {
+                    mVideoAdapter.add(item.getMedia());
+                    if (mThumbnailer != null)
+                        mThumbnailer.addJob(item);
+                }
+            }
+            mVideoAdapter.sort();
+        }
+    }
 
-	public void await() throws InterruptedException, BrokenBarrierException {
-		mBarrier.await();
-	}
+    @Override
+    public void sortBy(int sortby) {
+        mVideoAdapter.sortBy(sortby);
+    }
 
-	public void resetBarrier() {
-		mBarrier.reset();
-	}
+    public void setItemToUpdate(Media item) {
+        mItemToUpdate = item;
+        mHandler.sendEmptyMessage(UPDATE_ITEM);
+    }
 
-	private final BroadcastReceiver messageReceiverVideoListFragment = new BroadcastReceiver() {
-		@Override
-		public void onReceive(Context context, Intent intent) {
-			String action = intent.getAction();
+    public void setGroup(String prefix) {
+        mGroup = prefix;
+    }
 
-			if (action.equalsIgnoreCase(ACTION_SCAN_START)) {
-				mLayoutFlipperLoading.setVisibility(View.VISIBLE);
-				mTextViewNomedia.setVisibility(View.INVISIBLE);
-			} else if (action.equalsIgnoreCase(ACTION_SCAN_STOP)) {
-				mLayoutFlipperLoading.setVisibility(View.INVISIBLE);
-				mTextViewNomedia.setVisibility(View.VISIBLE);
-			}
-		}
-	};
+    public void await() throws InterruptedException, BrokenBarrierException {
+        mBarrier.await();
+    }
 
-	public static void actionScanStart(Context context) {
-		if (context == null)
-			return;
-		Intent intent = new Intent();
-		intent.setAction(ACTION_SCAN_START);
-		context.getApplicationContext().sendBroadcast(intent);
-	}
+    public void resetBarrier() {
+        mBarrier.reset();
+    }
 
-	public static void actionScanStop(Context context) {
-		if (context == null)
-			return;
-		Intent intent = new Intent();
-		intent.setAction(ACTION_SCAN_STOP);
-		context.getApplicationContext().sendBroadcast(intent);
-	}
+    private final BroadcastReceiver messageReceiverVideoListFragment = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+
+            if (action.equalsIgnoreCase(ACTION_SCAN_START)) {
+                mLayoutFlipperLoading.setVisibility(View.VISIBLE);
+                mTextViewNomedia.setVisibility(View.INVISIBLE);
+            } else if (action.equalsIgnoreCase(ACTION_SCAN_STOP)) {
+                mLayoutFlipperLoading.setVisibility(View.INVISIBLE);
+                mTextViewNomedia.setVisibility(View.VISIBLE);
+            }
+        }
+    };
+
+    public static void actionScanStart(Context context) {
+        if (context == null)
+            return;
+        Intent intent = new Intent();
+        intent.setAction(ACTION_SCAN_START);
+        context.getApplicationContext().sendBroadcast(intent);
+    }
+
+    public static void actionScanStop(Context context) {
+        if (context == null)
+            return;
+        Intent intent = new Intent();
+        intent.setAction(ACTION_SCAN_STOP);
+        context.getApplicationContext().sendBroadcast(intent);
+    }
 }

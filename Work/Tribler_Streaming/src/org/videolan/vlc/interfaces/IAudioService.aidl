@@ -1,7 +1,7 @@
 /*****************************************************************************
  * IAudioService.aidl
  *****************************************************************************
- * Copyright © 2011-2012 VLC authors and VideoLAN
+ * Copyright © 2011-2014 VLC authors and VideoLAN
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,11 +29,12 @@ interface IAudioService {
     void previous();
     void shuffle();
     void setTime(long time);
-    String getCurrentMediaLocation();
     void load(in List<String> mediaPathList, int position, boolean noVideo);
     void append(in List<String> mediaPathList);
-    List<String> getItems();
-    String getItem();
+    void moveItem(int positionStart, int positionEnd);
+    void remove(int position);
+    List<String> getMediaLocations();
+    String getCurrentMediaLocation();
     boolean isPlaying();
     boolean isShuffling();
     int getRepeatType();
@@ -42,11 +43,17 @@ interface IAudioService {
     boolean hasNext();
     boolean hasPrevious();
     String getTitle();
+    String getTitlePrev();
+    String getTitleNext();
     String getArtist();
+    String getArtistPrev();
+    String getArtistNext();
     String getAlbum();
     int getTime();
     int getLength();
     Bitmap getCover();
+    Bitmap getCoverPrev();
+    Bitmap getCoverNext();
     void addAudioCallback(IAudioServiceCallback cb);
     void removeAudioCallback(IAudioServiceCallback cb);
     void detectHeadset(boolean enable);

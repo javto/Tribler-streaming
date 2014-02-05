@@ -1,7 +1,7 @@
 /*****************************************************************************
  * PreferencesActivity.java
  *****************************************************************************
- * Copyright © 2011-2012 VLC authors and VideoLAN
+ * Copyright © 2011-2014 VLC authors and VideoLAN
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,13 +26,13 @@ import org.videolan.vlc.AudioServiceController;
 import org.videolan.vlc.BitmapCache;
 import org.videolan.vlc.MediaDatabase;
 import org.videolan.vlc.Util;
+import org.videolan.vlc.gui.audio.AudioUtil;
 
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.SharedPreferences.Editor;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.os.Bundle;
 import android.preference.CheckBoxPreference;
@@ -43,11 +43,10 @@ import android.preference.Preference.OnPreferenceChangeListener;
 import android.preference.Preference.OnPreferenceClickListener;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
-import android.util.Log;
+import android.preference.PreferenceScreen;
 import android.widget.Toast;
 
 import com.tudelft.triblersvod.example.R;
-import com.tudelft.triblersvod.example.TorrentPreferences;
 
 @SuppressWarnings("deprecation")
 public class PreferencesActivity extends PreferenceActivity implements OnSharedPreferenceChangeListener {
@@ -55,11 +54,13 @@ public class PreferencesActivity extends PreferenceActivity implements OnSharedP
     public final static String TAG = "VLC/PreferencesActivity";
 
     public final static String NAME = "VlcSharedPreferences";
-    public final static String LAST_MEDIA = "LastMedia";
     public final static String VIDEO_RESUME_TIME = "VideoResumeTime";
     public final static String VIDEO_SUBTITLE_FILES = "VideoSubtitleFiles";
     public final static int RESULT_RESCAN = RESULT_FIRST_USER + 1;
+    
+    //TRIBLER
     public final static String KEY_LIBTORRENT_DEBUG = "libtorrent_debug";
+    public final static String LAST_MEDIA = "LastMedia";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,19 +70,17 @@ public class PreferencesActivity extends PreferenceActivity implements OnSharedP
         // Directories
         Preference directoriesPref = findPreference("directories");
         directoriesPref.setOnPreferenceClickListener(
-new OnPreferenceClickListener() {
+                new OnPreferenceClickListener() {
 
-					@Override
-					public boolean onPreferenceClick(Preference preference) {
-						Intent intent = new Intent(getApplicationContext(),
-								BrowserActivity.class);
-						startActivity(intent);
-						setResult(RESULT_RESCAN);
-						return true;
-					}
-				});
+                    @Override
+                    public boolean onPreferenceClick(Preference preference) {
+                        Intent intent = new Intent(getApplicationContext(), BrowserActivity.class);
+                        startActivity(intent);
+                        setResult(RESULT_RESCAN);
+                        return true;
+                    }
+                });
 
-        
         // Screen orientation
         ListPreference screenOrientationPref = (ListPreference) findPreference("screen_orientation");
         screenOrientationPref.setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
@@ -92,9 +91,9 @@ new OnPreferenceClickListener() {
                 editor.putString("screen_orientation_value", (String)newValue);
                 editor.commit();
                 return true;
-	            }
-	        });
-        
+            }
+        });
+
         // Headset detection option
         CheckBoxPreference checkboxHS = (CheckBoxPreference) findPreference("enable_headset_detection");
         checkboxHS.setOnPreferenceClickListener(
@@ -151,6 +150,7 @@ new OnPreferenceClickListener() {
                     public boolean onPreferenceClick(Preference preference) {
                         MediaDatabase.getInstance(getBaseContext()).emptyDatabase();
                         BitmapCache.getInstance().clear();
+                        AudioUtil.clearCacheFolder();
                         Toast.makeText(getBaseContext(), R.string.media_db_cleared, Toast.LENGTH_SHORT).show();
                         return true;
                     }
@@ -189,6 +189,14 @@ new OnPreferenceClickListener() {
             aoutPref.setValue(Util.isGingerbreadOrLater()
                     ? "2"/*AOUT_OPENSLES*/
                             : "0"/*AOUT_AUDIOTRACK_JAVA*/);
+        // Video output
+        ListPreference voutPref = (ListPreference) findPreference("vout");
+        int voutEntriesId = Util.isGingerbreadOrLater() ? R.array.vouts : R.array.vouts_froyo;
+        int voutEntriesIdValues = Util.isGingerbreadOrLater() ? R.array.vouts_values : R.array.vouts_values_froyo;
+        voutPref.setEntries(voutEntriesId);
+        voutPref.setEntryValues(voutEntriesIdValues);
+        if (voutPref.getValue() == null)
+            voutPref.setValue("0" /* VOUT_ANDROID_SURFACE */);
         // Set locale
         EditTextPreference setLocalePref = (EditTextPreference) findPreference("set_locale");
         setLocalePref.setOnPreferenceChangeListener(new OnPreferenceChangeListener() {
@@ -223,12 +231,12 @@ new OnPreferenceClickListener() {
         sharedPrefs.registerOnSharedPreferenceChangeListener(this);
     }
 
-    
     @Override
     public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
-    	if(key.equalsIgnoreCase("enable_iomx")
-                || key.equalsIgnoreCase("subtitles_text_encoding")
+        if(key.equalsIgnoreCase("hardware_acceleration")
+                || key.equalsIgnoreCase("subtitle_text_encoding")
                 || key.equalsIgnoreCase("aout")
+                || key.equalsIgnoreCase("vout")
                 || key.equalsIgnoreCase("chroma_format")
                 || key.equalsIgnoreCase("deblocking")
                 || key.equalsIgnoreCase("enable_frame_skip")
@@ -237,7 +245,20 @@ new OnPreferenceClickListener() {
                 || key.equalsIgnoreCase("network_caching")) {
             Util.updateLibVlcSettings(sharedPreferences);
             LibVLC.restart(this);
-        } 
+        }
+    }
+
+    @Override
+    public boolean onPreferenceTreeClick(PreferenceScreen preferenceScreen, Preference preference)
+    {
+        super.onPreferenceTreeClick(preferenceScreen, preference);
+        if (preference!=null)
+            if (preference instanceof PreferenceScreen)
+                if (((PreferenceScreen)preference).getDialog()!=null)
+                    ((PreferenceScreen)preference).getDialog().getWindow().getDecorView()
+                    .setBackgroundDrawable(this.getWindow().getDecorView().getBackground()
+                            .getConstantState().newDrawable());
+        return false;
     }
 
     @Override
@@ -248,8 +269,8 @@ new OnPreferenceClickListener() {
 
     @Override
     protected void onPause() {
-    	AudioServiceController.getInstance().unbindAudioService(this);
         super.onPause();
+        AudioServiceController.getInstance().unbindAudioService(this);
     }
 
     private void restartService(Context context) {

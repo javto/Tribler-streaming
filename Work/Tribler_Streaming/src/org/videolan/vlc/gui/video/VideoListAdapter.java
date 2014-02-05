@@ -24,8 +24,9 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Locale;
 
+import org.videolan.libvlc.Media;
 import org.videolan.vlc.BitmapCache;
-import org.videolan.vlc.Media;
+import org.videolan.vlc.MediaGroup;
 import org.videolan.vlc.Util;
 
 import android.content.Context;
@@ -68,7 +69,7 @@ public class VideoListAdapter extends ArrayAdapter<Media>
         }
     }
 
-    public void setLastMedia(String lastMRL, HashMap<String, Long> times) {
+    public void setTimes(HashMap<String, Long> times) {
         // update times
         for (int i = 0; i < getCount(); ++i) {
             Media media = getItem(i);
@@ -145,8 +146,17 @@ public class VideoListAdapter extends ArrayAdapter<Media>
             holder.title = (TextView) v.findViewById(R.id.ml_item_title);
             holder.subtitle = (TextView) v.findViewById(R.id.ml_item_subtitle);
             holder.progress = (ProgressBar) v.findViewById(R.id.ml_item_progress);
+            holder.more = (ImageView) v.findViewById(R.id.item_more);
             holder.listmode = mListMode;
             v.setTag(holder);
+
+            holder.more.setOnClickListener(new OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    if (mFragment != null)
+                    mFragment.onContextPopupMenu(v, position);
+                }
+            });
 
             /* Set the layoutParams based on the values set in the video_grid_item.xml root element */
             v.setLayoutParams(new GridView.LayoutParams(v.getLayoutParams().width, v.getLayoutParams().height));
@@ -157,7 +167,7 @@ public class VideoListAdapter extends ArrayAdapter<Media>
         Media media = getItem(position);
 
         /* Thumbnail */
-        Bitmap thumbnail = media.getPicture();
+        Bitmap thumbnail = Util.getPictureFromCache(media);
         if (thumbnail == null) {
             // missing thumbnail
             thumbnail = BitmapCache.GetFromResource(v, R.drawable.thumbnail);
@@ -173,6 +183,26 @@ public class VideoListAdapter extends ArrayAdapter<Media>
         ColorStateList titleColor = v.getResources().getColorStateList(R.color.list_title);
         holder.title.setTextColor(titleColor);
 
+        if (media instanceof MediaGroup)
+            fillGroupView(holder, media);
+        else
+            fillVideoView(holder, media);
+
+        return v;
+    }
+
+    private void fillGroupView(ViewHolder holder, Media media) {
+        MediaGroup mediaGroup = (MediaGroup) media;
+        int size = mediaGroup.size();
+        String text = getContext().getResources().getQuantityString(R.plurals.videos_quantity, size, size);
+
+        holder.subtitle.setText(text);
+        holder.title.setText(media.getTitle() + "\u2026"); // ellipsis
+        holder.more.setVisibility(View.INVISIBLE);
+        holder.progress.setVisibility(View.GONE);
+    }
+
+    private void fillVideoView(ViewHolder holder, Media media) {
         /* Time / Duration */
         long lastTime = media.getTime();
         String text;
@@ -192,22 +222,9 @@ public class VideoListAdapter extends ArrayAdapter<Media>
             text += String.format(" - %dx%d", media.getWidth(), media.getHeight());
         }
 
-        /* Text */
         holder.subtitle.setText(text);
         holder.title.setText(media.getTitle());
-
-        /* Popup menu */
-        final ImageView more = (ImageView)v.findViewById(R.id.ml_item_more);
-        if (more != null && mFragment != null) {
-            more.setOnClickListener(new OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    mFragment.onContextPopupMenu(more, position);
-                }
-            });
-        }
-
-        return v;
+        holder.more.setVisibility(View.VISIBLE);
     }
 
     static class ViewHolder {

@@ -1,7 +1,7 @@
 /*****************************************************************************
  * MediaDatabase.java
  *****************************************************************************
- * Copyright © 2011-2012 VLC authors and VideoLAN
+ * Copyright © 2011-2014 VLC authors and VideoLAN
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,6 +30,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+
+import org.videolan.libvlc.Media;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -340,7 +342,7 @@ public class MediaDatabase {
         return files;
     }
 
-    public synchronized HashMap<String, Media> getMedias(Context context) {
+    public synchronized HashMap<String, Media> getMedias() {
 
         Cursor cursor;
         HashMap<String, Media> medias = new HashMap<String, Media>();
@@ -371,7 +373,7 @@ public class MediaDatabase {
             if (cursor.moveToFirst()) {
                 do {
                     String location = cursor.getString(12);
-                    Media media = new Media(context, location,
+                    Media media = new Media(location,
                             cursor.getLong(0),      // MEDIA_TIME
                             cursor.getLong(1),      // MEDIA_LENGTH
                             cursor.getInt(2),       // MEDIA_TYPE
@@ -433,7 +435,7 @@ public class MediaDatabase {
         return times;
     }
 
-    public synchronized Media getMedia(Context context, String location) {
+    public synchronized Media getMedia(String location) {
 
         Cursor cursor;
         Media media = null;
@@ -463,11 +465,11 @@ public class MediaDatabase {
             return null;
         }
         if (cursor.moveToFirst()) {
-            media = new Media(context, location,
+            media = new Media(location,
                     cursor.getLong(0),
                     cursor.getLong(1),
                     cursor.getInt(2),
-                    null,
+                    null, // lazy loading, see getPicture()
                     cursor.getString(3),
                     cursor.getString(4),
                     cursor.getString(5),

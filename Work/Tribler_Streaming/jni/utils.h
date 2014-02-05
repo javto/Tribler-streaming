@@ -23,8 +23,6 @@
 
 libvlc_media_t *new_media(jlong instance, JNIEnv *env, jobject thiz, jstring fileLocation, bool noOmx, bool noVideo);
 
-libvlc_media_list_t* getMediaListFromJava(JNIEnv *env, jobject obj);
-
 libvlc_media_player_t *getMediaPlayer(JNIEnv *env, jobject thiz);
 
 jint getInt(JNIEnv *env, jobject thiz, const char* field);
@@ -38,6 +36,10 @@ void setLong(JNIEnv *env, jobject item, const char* field, jlong value);
 void setFloat(JNIEnv *env, jobject item, const char* field, jfloat value);
 
 void setString(JNIEnv *env, jobject item, const char* field, const char* text);
+
+void arrayListGetIDs(JNIEnv *env, jclass* p_class, jmethodID* p_add, jmethodID* p_remove);
+
+void arrayListStringAdd(JNIEnv *env, jclass class, jmethodID methodID, jobject arrayList, const char* str);
 
 jobject getEventHandlerReference(JNIEnv *env, jobject thiz, jobject eventHandler);
 

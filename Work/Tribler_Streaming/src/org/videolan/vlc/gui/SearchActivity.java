@@ -23,11 +23,10 @@ package org.videolan.vlc.gui;
 import java.util.ArrayList;
 import java.util.Locale;
 
+import org.videolan.libvlc.Media;
 import org.videolan.vlc.AudioServiceController;
-import org.videolan.vlc.Media;
 import org.videolan.vlc.MediaDatabase;
 import org.videolan.vlc.MediaLibrary;
-import org.videolan.vlc.gui.audio.AudioPlayerFragment;
 import org.videolan.vlc.gui.video.VideoPlayerActivity;
 
 import android.app.ListActivity;
@@ -212,13 +211,15 @@ public class SearchActivity extends ListActivity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
 
-		int itemId = item.getItemId();
-		if (itemId == R.id.search_clear_history) {
-			MediaDatabase db = MediaDatabase.getInstance(this);
-			db.clearSearchhistory();
-			if (mHistoryAdapter == getListAdapter())
-			    showSearchHistory();
-		}
+        // Handle item selection
+        switch (item.getItemId()) {
+            // Sort by name
+            case R.id.search_clear_history:
+                MediaDatabase db = MediaDatabase.getInstance(this);
+                db.clearSearchhistory();
+                if (mHistoryAdapter == getListAdapter())
+                    showSearchHistory();
+        }
         return super.onOptionsItemSelected(item);
     }
 
@@ -255,7 +256,6 @@ public class SearchActivity extends ListActivity {
                         arr.add(audioItem.getLocation());
                 }
                 AudioServiceController.getInstance().load(arr, arr.indexOf(item.getLocation()));
-                AudioPlayerFragment.start(this);
                 finish();
                 return;
             }

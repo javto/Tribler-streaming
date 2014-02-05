@@ -1,7 +1,7 @@
 /*****************************************************************************
  * EventHandler.java
  *****************************************************************************
- * Copyright © 2011-2012 VLC authors and VideoLAN
+ * Copyright © 2011-2014 VLC authors and VideoLAN
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by
@@ -59,9 +59,9 @@ public class EventHandler {
     //public static final int MediaPlayerLengthChanged        = 0x111;
     public static final int MediaPlayerVout                   = 0x112;
 
-    public static final int MediaListItemAdded                = 0x200;
+    //public static final int MediaListItemAdded              = 0x200;
     //public static final int MediaListWillAddItem            = 0x201;
-    public static final int MediaListItemDeleted              = 0x202;
+    //public static final int MediaListItemDeleted            = 0x202;
     //public static final int MediaListWillDeleteItem         = 0x203;
 
     //public static final int MediaListViewItemAdded          = 0x300;
@@ -87,6 +87,12 @@ public class EventHandler {
     //public static final int VlmMediaInstanceStatusPause     = 0x608;
     //public static final int VlmMediaInstanceStatusEnd       = 0x609;
     //public static final int VlmMediaInstanceStatusError     = 0x60a;
+
+    public static final int CustomMediaListExpanding          = 0x2000;
+    public static final int CustomMediaListExpandingEnd       = 0x2001;
+    public static final int CustomMediaListItemAdded          = 0x2002;
+    public static final int CustomMediaListItemDeleted        = 0x2003;
+    public static final int CustomMediaListItemMoved          = 0x2004;
 
     private ArrayList<Handler> mEventHandler;
     private static EventHandler mInstance;

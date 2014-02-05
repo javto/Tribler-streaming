@@ -59,6 +59,7 @@ jboolean Java_org_videolan_libvlc_LibVLC_hasVideoTrack(JNIEnv *env, jobject thiz
     libvlc_media_parse(p_m);
 
     libvlc_media_player_t* p_mp = libvlc_media_player_new_from_media(p_m);
+    libvlc_media_player_set_video_title_display(p_mp, libvlc_position_disable, 0);
 
     struct length_change_monitor* monitor;
     monitor = malloc(sizeof(struct length_change_monitor));
@@ -197,13 +198,16 @@ jobjectArray Java_org_videolan_libvlc_LibVLC_readTracksInfo(JNIEnv *env, jobject
 }
 
 
-jobjectArray Java_org_videolan_libvlc_LibVLC_readTracksInfoPosition(JNIEnv *env, jobject thiz,
-                                                                    jobject mlJ, jint position)
+jobjectArray Java_org_videolan_libvlc_LibVLC_readTracksInfoInternal(JNIEnv *env, jobject thiz)
 {
-    libvlc_media_list_t* p_mlist = getMediaListFromJava(env, mlJ);
-    libvlc_media_t *p_m = libvlc_media_list_item_at_index( p_mlist, position );
+    libvlc_media_player_t* p_mp = getMediaPlayer(env, thiz);
+    if (p_mp == NULL) {
+        LOGE("No media player!");
+        return NULL;
+    }
+    libvlc_media_t *p_m = libvlc_media_player_get_media(p_mp);
     if (p_m == NULL) {
-        LOGE("Could not load get media @ position %d!", position);
+        LOGE("Could not load internal media!");
         return NULL;
     } else
         return read_track_info_internal(env, thiz, p_m);

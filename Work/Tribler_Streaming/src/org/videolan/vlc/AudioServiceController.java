@@ -54,6 +54,11 @@ public class AudioServiceController implements IAudioPlayerControl {
         public void update() throws RemoteException {
             updateAudioPlayer();
         }
+
+        @Override
+        public void updateProgress() throws RemoteException {
+            updateProgressAudioPlayer();
+        }
     };
 
     private AudioServiceController() {
@@ -148,7 +153,8 @@ public class AudioServiceController implements IAudioPlayerControl {
      * @param ap
      */
     public void addAudioPlayer(IAudioPlayer ap) {
-        mAudioPlayer.add(ap);
+        if (!mAudioPlayer.contains(ap))
+            mAudioPlayer.add(ap);
     }
 
     /**
@@ -156,9 +162,8 @@ public class AudioServiceController implements IAudioPlayerControl {
      * @param ap
      */
     public void removeAudioPlayer(IAudioPlayer ap) {
-        if (mAudioPlayer.contains(ap)) {
+        if (mAudioPlayer.contains(ap))
             mAudioPlayer.remove(ap);
-        }
     }
 
     /**
@@ -167,6 +172,14 @@ public class AudioServiceController implements IAudioPlayerControl {
     private void updateAudioPlayer() {
         for (IAudioPlayer player : mAudioPlayer)
             player.update();
+    }
+
+    /**
+     * Update the progress of all AudioPlayers
+     */
+    private void updateProgressAudioPlayer() {
+        for (IAudioPlayer player : mAudioPlayer)
+            player.updateProgress();
     }
 
     /**
@@ -236,14 +249,26 @@ public class AudioServiceController implements IAudioPlayerControl {
                 new Object[] { mediaPathList } );
     }
 
-    @SuppressWarnings("unchecked")
-    public List<String> getItems() {
-        List<String> def = new ArrayList<String>();
-        return remoteProcedureCall(mAudioServiceBinder, List.class, def, "getItems", null, null);
+    public void moveItem(int positionStart, int positionEnd) {
+        remoteProcedureCall(mAudioServiceBinder, Void.class, (Void)null, "moveItem",
+                new Class<?>[] { int.class, int.class },
+                new Object[] { positionStart, positionEnd } );
     }
 
-    public String getItem() {
-        return remoteProcedureCall(mAudioServiceBinder, String.class, (String)null, "getItem", null, null);
+    public void remove(int position) {
+        remoteProcedureCall(mAudioServiceBinder, Void.class, (Void)null, "remove",
+                new Class<?>[] { int.class },
+                new Object[] { position } );
+    }
+
+    @SuppressWarnings("unchecked")
+    public List<String> getMediaLocations() {
+        List<String> def = new ArrayList<String>();
+        return remoteProcedureCall(mAudioServiceBinder, List.class, def, "getMediaLocations", null, null);
+    }
+
+    public String getCurrentMediaLocation() {
+        return remoteProcedureCall(mAudioServiceBinder, String.class, (String)null, "getCurrentMediaLocation", null, null);
     }
 
     public void stop() {
@@ -276,8 +301,28 @@ public class AudioServiceController implements IAudioPlayerControl {
     }
 
     @Override
+    public String getArtistPrev() {
+        return remoteProcedureCall(mAudioServiceBinder, String.class, (String)null, "getArtistPrev", null, null);
+    }
+
+    @Override
+    public String getArtistNext() {
+        return remoteProcedureCall(mAudioServiceBinder, String.class, (String)null, "getArtistNext", null, null);
+    }
+
+    @Override
     public String getTitle() {
         return remoteProcedureCall(mAudioServiceBinder, String.class, (String)null, "getTitle", null, null);
+    }
+
+    @Override
+    public String getTitlePrev() {
+        return remoteProcedureCall(mAudioServiceBinder, String.class, (String)null, "getTitlePrev", null, null);
+    }
+
+    @Override
+    public String getTitleNext() {
+        return remoteProcedureCall(mAudioServiceBinder, String.class, (String)null, "getTitleNext", null, null);
     }
 
     @Override
@@ -315,6 +360,16 @@ public class AudioServiceController implements IAudioPlayerControl {
     @Override
     public Bitmap getCover() {
         return remoteProcedureCall(mAudioServiceBinder, Bitmap.class, (Bitmap)null, "getCover", null, null);
+    }
+
+    @Override
+    public Bitmap getCoverPrev() {
+        return remoteProcedureCall(mAudioServiceBinder, Bitmap.class, (Bitmap)null, "getCoverPrev", null, null);
+    }
+
+    @Override
+    public Bitmap getCoverNext() {
+        return remoteProcedureCall(mAudioServiceBinder, Bitmap.class, (Bitmap)null, "getCoverNext", null, null);
     }
 
     @Override

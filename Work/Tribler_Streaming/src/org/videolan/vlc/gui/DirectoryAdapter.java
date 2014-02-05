@@ -28,7 +28,7 @@ import java.util.Collections;
 import java.util.regex.Pattern;
 
 import org.videolan.libvlc.LibVLC;
-import org.videolan.vlc.Media;
+import org.videolan.libvlc.Media;
 import org.videolan.vlc.Util;
 import org.videolan.vlc.VLCApplication;
 
@@ -299,7 +299,7 @@ public class DirectoryAdapter extends BaseAdapter {
         String holderText = "";
         if(selectedNode.isFile()) {
             Log.d(TAG, "Loading media " + selectedNode.name);
-            Media m = new Media(getMediaLocation(position), false);
+            Media m = new Media(LibVLC.getExistingInstance(), getMediaLocation(position));
             holder.title.setText(m.getTitle());
             holderText = m.getSubtitle();
         } else

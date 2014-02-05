@@ -34,117 +34,108 @@ import android.preference.PreferenceManager;
 import android.util.Log;
 
 public class VLCApplication extends Application {
-	public final static String TAG = "VLC/VLCApplication";
-	private static VLCApplication instance;
+    public final static String TAG = "VLC/VLCApplication";
+    private static VLCApplication instance;
 
-	public final static String SLEEP_INTENT = "org.videolan.vlc.SleepIntent";
+    public final static String SLEEP_INTENT = "org.videolan.vlc.SleepIntent";
+ // TRIBLER
+ 	private LibTorrent libTorrent = null;
+ 	private static int LISTEN_PORT = 0;
+ 	private static int LIMIT_UL = 0;
+ 	private static int LIMIT_DL = 0;
+ 	private static boolean ENCRYPTION = false;
 
-	// TRIBLER
-	private LibTorrent libTorrent = null;
-	private static int LISTEN_PORT = 0;
-	private static int LIMIT_UL = 0;
-	private static int LIMIT_DL = 0;
-	private static boolean ENCRYPTION = false;
+ 	public LibTorrent getLibTorrent() {
+ 		if (this.libTorrent == null) {
+ 			this.libTorrent = new LibTorrent();
+ 			this.libTorrent.SetSession(LISTEN_PORT, LIMIT_UL, LIMIT_DL, ENCRYPTION);
+ 			this.libTorrent.ResumeSession();
+ 		}
+ 		return this.libTorrent;
+ 	}
+ 	
+ 	public LibTorrent getLibTorrent(int listenPort, int uploadLimit, int downloadLimit, boolean encryption) {
+ 		if (this.libTorrent == null) {
+ 			this.libTorrent = new LibTorrent();
+ 			LISTEN_PORT = listenPort;
+ 			LIMIT_UL = uploadLimit;
+ 			LIMIT_DL = downloadLimit;
+ 			ENCRYPTION = encryption;
+ 			this.libTorrent.SetSession(listenPort, uploadLimit, downloadLimit, encryption);
+ 			this.libTorrent.ResumeSession();
+ 		}
+ 		return this.libTorrent;
+ 	}
 
-	public LibTorrent getLibTorrent() {
-		if (this.libTorrent == null) {
-			this.libTorrent = new LibTorrent();
-			this.libTorrent.SetSession(LISTEN_PORT, LIMIT_UL, LIMIT_DL, ENCRYPTION);
-			this.libTorrent.ResumeSession();
-		}
-		return this.libTorrent;
-	}
-	
-	public LibTorrent getLibTorrent(int listenPort, int uploadLimit, int downloadLimit, boolean encryption) {
-		if (this.libTorrent == null) {
-			this.libTorrent = new LibTorrent();
-			LISTEN_PORT = listenPort;
-			LIMIT_UL = uploadLimit;
-			LIMIT_DL = downloadLimit;
-			ENCRYPTION = encryption;
-			this.libTorrent.SetSession(listenPort, uploadLimit, downloadLimit, encryption);
-			this.libTorrent.ResumeSession();
-		}
-		return this.libTorrent;
-	}
+ 	// \TRIBLER
+    @Override
+    public void onCreate() {
+        super.onCreate();
 
-	// \TRIBLER
+        // Are we using advanced debugging - locale?
+        SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this);
+        String p = pref.getString("set_locale", "");
+        if (p != null && !p.equals("")) {
+            Locale locale;
+            // workaround due to region code
+            if(p.equals("zh-TW")) {
+                locale = Locale.TRADITIONAL_CHINESE;
+            } else if(p.startsWith("zh")) {
+                locale = Locale.CHINA;
+            } else if(p.equals("pt-BR")) {
+                locale = new Locale("pt", "BR");
+            } else if(p.equals("bn-IN") || p.startsWith("bn")) {
+                locale = new Locale("bn", "IN");
+            } else {
+                /**
+                 * Avoid a crash of
+                 * java.lang.AssertionError: couldn't initialize LocaleData for locale
+                 * if the user enters nonsensical region codes.
+                 */
+                if(p.contains("-"))
+                    p = p.substring(0, p.indexOf('-'));
+                locale = new Locale(p);
+            }
+            Locale.setDefault(locale);
+            Configuration config = new Configuration();
+            config.locale = locale;
+            getBaseContext().getResources().updateConfiguration(config,
+                    getBaseContext().getResources().getDisplayMetrics());
+        }
 
-	@Override
-	public void onTerminate() {
-		super.onTerminate();
-		this.libTorrent.AbortSession();
-	}
+        instance = this;
 
-	@Override
-	public void onCreate() {
-		super.onCreate();
+        // Initialize the database soon enough to avoid any race condition and crash
+        MediaDatabase.getInstance(this);
+        // Prepare cache folder constants
+        AudioUtil.prepareCacheFolder(this);
+    }
 
-		// Are we using advanced debugging - locale?
-		SharedPreferences pref = PreferenceManager
-				.getDefaultSharedPreferences(this);
-		String p = pref.getString("set_locale", "");
-		if (p != null && !p.equals("")) {
-			Locale locale;
-			// workaround due to region code
-			if (p.equals("zh-TW")) {
-				locale = Locale.TRADITIONAL_CHINESE;
-			} else if (p.startsWith("zh")) {
-				locale = Locale.CHINA;
-			} else if (p.equals("pt-BR")) {
-				locale = new Locale("pt", "BR");
-			} else if (p.equals("bn-IN") || p.startsWith("bn")) {
-				locale = new Locale("bn", "IN");
-			} else {
-				/**
-				 * Avoid a crash of java.lang.AssertionError: couldn't
-				 * initialize LocaleData for locale if the user enters
-				 * nonsensical region codes.
-				 */
-				if (p.contains("-"))
-					p = p.substring(0, p.indexOf('-'));
-				locale = new Locale(p);
-			}
-			Locale.setDefault(locale);
-			Configuration config = new Configuration();
-			config.locale = locale;
-			getBaseContext().getResources().updateConfiguration(config,
-					getBaseContext().getResources().getDisplayMetrics());
-		}
+    /**
+     * Called when the overall system is running low on memory
+     */
+    @Override
+    public void onLowMemory() {
+        super.onLowMemory();
+        Log.w(TAG, "System is running low on memory");
 
-		instance = this;
+        BitmapCache.getInstance().clear();
+    }
 
-		// Initialize the database soon enough to avoid any race condition and
-		// crash
-		MediaDatabase.getInstance(this);
-		// Prepare cache folder constants
-		AudioUtil.prepareCacheFolder(this);
-	}
+    /**
+     * @return the main context of the Application
+     */
+    public static Context getAppContext()
+    {
+        return instance;
+    }
 
-	/**
-	 * Called when the overall system is running low on memory
-	 */
-	@Override
-	public void onLowMemory() {
-		super.onLowMemory();
-		Log.w(TAG, "System is running low on memory");
-
-		BitmapCache.getInstance().clear();
-	}
-
-	/**
-	 * @return the main context of the Application
-	 */
-	public static Context getAppContext() {
-		return instance;
-	}
-
-	/**
-	 * @return the main resources from the Application
-	 */
-	public static Resources getAppResources() {
-		if (instance == null)
-			return null;
-		return instance.getResources();
-	}
+    /**
+     * @return the main resources from the Application
+     */
+    public static Resources getAppResources()
+    {
+        if(instance == null) return null;
+        return instance.getResources();
+    }
 }

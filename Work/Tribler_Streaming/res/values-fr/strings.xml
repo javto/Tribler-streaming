@@ -54,6 +54,10 @@
         <item quantity="one">1 fichier multimedia</item>
         <item quantity="other">%d fichiers multimedia</item>
     </plurals>
+    <plurals name="videos_quantity">
+        <item quantity="one">1 vidéo</item>
+        <item quantity="other">%d vidéos</item>
+    </plurals>
     <string name="internal_memory">Mémoire interne</string>
     <string name="parent_folder">Répertoire parent</string>
     <string name="audio">Audio</string>
@@ -156,8 +160,8 @@
     <string name="enable_brightness_gesture_summary">Pendant la lecture d’une vidéo, contrôlez la luminosité au toucher</string>
     <string name="enable_headset_detection">Détecter le casque</string>
     <string name="enable_headset_detection_summary">Pause lors du débranchement du casque, Reprise lors du branchement du casque</string>
-    <string name="enable_wheel_bar">Activer la Wheel Bar</string>
-    <string name="enable_wheel_bar_summary">Barre de recherche alternative pour l’interface video</string>
+    <string name="enable_jump_buttons">Activer les boutons de saut</string>
+    <string name="enable_jump_buttons_summary">Afficher les boutons avancer/reculer sur l\'interface vidéo</string>
     <string name="enable_steal_remote_control">Contrôle exclusif de la télécommande</string>
     <string name="enable_steal_remote_control_summary">Evite les conflits en volant le contrôle de la télécommande aux autres applis. Cela empêche le double clic de rappeler le dernier numéro sur les téléphones HTC.</string>
     <string name="performance_prefs_category">Performance</string>
@@ -167,8 +171,8 @@
     <string name="enable_iomx_summary">Active l\'accélération matérielle pour améliorer les performances. Ne fonctionne pas sur tous les appareils.</string>
     <string name="enable_time_stretching_audio">Correction audio</string>
     <string name="enable_time_stretching_audio_summary">Active la correction audio en lecture accélérée ou ralentie. Nécessite un appareil puissant</string>
-    <string name="enable_frame_skip">Activer le sautage des trames</string>
-    <string name="enable_frame_skip_summary">Accélérer le décodage pour améliore les performances, mais diminue la qualité</string>
+    <string name="enable_frame_skip">Activer le saut de trames</string>
+    <string name="enable_frame_skip_summary">Accélère le décodage pour améliorer les performances, mais diminue la qualité</string>
     <string name="deblocking">Filtre de déblocage</string>
     <string name="deblocking_summary">Améliore la qualité mais nécessite un appareil puissant</string>
     <string name="deblocking_always">Déblocage max (plus lente)</string>
@@ -179,7 +183,7 @@
     <string name="clear_history">Supprimer l\'historique de vos recherches</string>
     <string name="clear_media_db">Réinitialiser votre bibliothèque multimédia</string>
     <string name="media_db_cleared">Bibliothèque multimédia réinitialisée !</string>
-    <string name="subtitles_text_encoding">Codage des caractères pour certains sous-titres</string>
+    <string name="subtitle_text_encoding">Codage des caractères pour certains sous-titres</string>
 
     <string name="debug_logs">Journal de débogage</string>
     <string name="start_logging">Démarrer l\'enregistrement</string>
@@ -202,5 +206,5 @@
     <string name="set_locale">Définir la langue</string>
     <string name="set_locale_detail">Laisser vide pour réinitialiser</string>
     <string name="set_locale_popup">Quitter et relancer VLC pour appliquer la langue.</string>
-    <string name="quit">Quitter l\'application</string>
+    <string name="quit">Redémarrer l\'application</string>
 </resources>

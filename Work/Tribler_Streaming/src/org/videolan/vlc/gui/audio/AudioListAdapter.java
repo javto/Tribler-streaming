@@ -23,17 +23,21 @@ package org.videolan.vlc.gui.audio;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.videolan.vlc.BitmapCache;
-import org.videolan.vlc.Media;
+import org.videolan.libvlc.Media;
+import org.videolan.vlc.widget.AudioPlaylistItemViewGroup;
 
 import android.content.Context;
 import android.content.res.ColorStateList;
-import android.graphics.Bitmap;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
+import android.view.View.OnClickListener;
+import android.view.View.OnLongClickListener;
+import android.view.View.OnTouchListener;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
-import android.widget.ImageView;
+import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.tudelft.triblersvod.example.R;
@@ -77,30 +81,72 @@ public class AudioListAdapter extends ArrayAdapter<Media> {
         View v = convertView;
         if (v == null) {
             LayoutInflater inflater = (LayoutInflater) getContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-            v = inflater.inflate(R.layout.audio_browser_item, parent, false);
+            v = inflater.inflate(R.layout.audio_playlist_item, parent, false);
             holder = new ViewHolder();
-            holder.layout = v.findViewById(R.id.layout_item);
-            holder.cover = (ImageView) v.findViewById(R.id.cover);
             holder.title = (TextView) v.findViewById(R.id.title);
             holder.artist = (TextView) v.findViewById(R.id.artist);
+            holder.moveButton = (ImageButton) v.findViewById(R.id.move);
+            holder.expansion = (LinearLayout)v.findViewById(R.id.item_expansion);
+            holder.layoutItem = (LinearLayout)v.findViewById(R.id.layout_item);
+            holder.layoutFooter = (View)v.findViewById(R.id.layout_footer);
+            holder.itemGroup = (AudioPlaylistItemViewGroup)v.findViewById(R.id.playlist_item);
             v.setTag(holder);
         } else
             holder = (ViewHolder) v.getTag();
 
+        holder.expansion.setVisibility(LinearLayout.GONE);
+        holder.layoutItem.setVisibility(LinearLayout.VISIBLE);
+        holder.layoutFooter.setVisibility(LinearLayout.VISIBLE);
+        holder.itemGroup.scrollTo(1);
+
         Media media = getItem(position);
+        final String title = media.getTitle();
+        final String artist = media.getSubtitle();
+        final int pos = position;
+        final View itemView = v;
 
-        Bitmap cover = AudioUtil.getCover(v.getContext(), media, 64);
-        if (cover == null)
-            cover = BitmapCache.GetFromResource(v, R.drawable.icon);
-
-        holder.cover.setImageBitmap(cover);
-
-        holder.title.setText(media.getTitle());
+        holder.title.setText(title);
         ColorStateList titleColor = v.getResources().getColorStateList(mCurrentIndex == position
                 ? R.color.list_title_last
                 : R.color.list_title);
         holder.title.setTextColor(titleColor);
-        holder.artist.setText(media.getSubtitle());
+        holder.artist.setText(artist);
+        holder.position = position;
+
+        final AudioPlaylistView playlistView = (AudioPlaylistView)parent;
+
+        holder.moveButton.setOnTouchListener(new OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                    playlistView.startDrag(pos, title, artist);
+                    return true;
+                }
+                else
+                    return false;
+            }
+        });
+        holder.itemGroup.setOnItemSlidedListener(
+                new AudioPlaylistItemViewGroup.OnItemSlidedListener() {
+            @Override
+            public void onItemSlided() {
+                playlistView.removeItem(pos);
+            }
+        });
+        holder.layoutItem.setOnClickListener(new OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                playlistView.performItemClick(itemView, pos, 0);
+            }
+        });
+        holder.layoutItem.setOnLongClickListener(new OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
+                playlistView.performItemLongClick(itemView, pos, 0);
+                return true;
+            }
+        });
+
         return v;
     }
 
@@ -120,9 +166,13 @@ public class AudioListAdapter extends ArrayAdapter<Media> {
     }
 
     static class ViewHolder {
-        View layout;
-        ImageView cover;
+        int position;
         TextView title;
         TextView artist;
+        ImageButton moveButton;
+        LinearLayout expansion;
+        LinearLayout layoutItem;
+        View layoutFooter;
+        AudioPlaylistItemViewGroup itemGroup;
     }
 }

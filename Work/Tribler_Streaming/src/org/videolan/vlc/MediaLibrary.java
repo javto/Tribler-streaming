@@ -34,6 +34,8 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.videolan.libvlc.LibVLC;
+import org.videolan.libvlc.LibVlcException;
+import org.videolan.libvlc.Media;
 import org.videolan.vlc.gui.MainActivity;
 import org.videolan.vlc.gui.audio.AudioBrowserFragment;
 import org.videolan.vlc.gui.video.VideoGridFragment;
@@ -206,6 +208,14 @@ public class MediaLibrary {
 
         @Override
         public void run() {
+            LibVLC libVlcInstance;
+            try {
+                libVlcInstance = Util.getLibVlcInstance();
+            } catch (LibVlcException e1) {
+                Log.e(TAG, "ERROR: LibVLCException while trying to get instance");
+                return;
+            }
+
             // Initialize variables
             final MediaDatabase DBManager = MediaDatabase.getInstance(VLCApplication.getAppContext());
 
@@ -225,7 +235,7 @@ public class MediaLibrary {
             directories.addAll(mediaDirs);
 
             // get all existing media items
-            HashMap<String, Media> existingMedias = DBManager.getMedias(mContext);
+            HashMap<String, Media> existingMedias = DBManager.getMedias();
 
             // list of all added files
             HashSet<String> addedLocations = new HashSet<String>();
@@ -311,7 +321,11 @@ public class MediaLibrary {
                     } else {
                         mItemListLock.writeLock().lock();
                         // create new media item
-                        mItemList.add(new Media(fileURI, true));
+                        Media m = new Media(libVlcInstance, fileURI);
+                        mItemList.add(m);
+                        // Add this item to database
+                        MediaDatabase db = MediaDatabase.getInstance(VLCApplication.getAppContext());
+                        db.addMedia(m);
                         mItemListLock.writeLock().unlock();
                     }
                     if (isStopping) {

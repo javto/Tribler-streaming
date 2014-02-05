@@ -30,8 +30,9 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 
+import org.videolan.libvlc.LibVlcUtil;
+import org.videolan.libvlc.Media;
 import org.videolan.vlc.BitmapCache;
-import org.videolan.vlc.Media;
 import org.videolan.vlc.MurmurHash;
 import org.videolan.vlc.Util;
 import org.videolan.vlc.VLCApplication;
@@ -58,11 +59,12 @@ public class AudioUtil {
     public final static String TAG = "VLC/AudioUtil";
 
     public static String CACHE_DIR = null;
+    public static String ART_DIR = null;
     public static String COVER_DIR = null;
     public static String PLAYLIST_DIR = null;
 
     public static void setRingtone( Media song, Activity activity){
-        File newringtone = Util.URItoFile(song.getLocation());
+        File newringtone = LibVlcUtil.URItoFile(song.getLocation());
         if(!newringtone.exists()) {
             Toast.makeText(activity.getApplicationContext(),activity.getString(R.string.ringtone_error), Toast.LENGTH_SHORT).show();
             return;
@@ -109,14 +111,34 @@ public class AudioUtil {
             CACHE_DIR = context.getExternalCacheDir().getPath();
         else
             CACHE_DIR = Environment.getExternalStorageDirectory().getPath() + "/Android/data/" + context.getPackageName() + "/cache";
+        ART_DIR = CACHE_DIR + "/art/";
         COVER_DIR = CACHE_DIR + "/covers/";
         PLAYLIST_DIR = CACHE_DIR + "/playlists/";
 
-        for(String path : Arrays.asList(COVER_DIR, PLAYLIST_DIR)) {
+        for(String path : Arrays.asList(ART_DIR, COVER_DIR, PLAYLIST_DIR)) {
             File file = new File(path);
             if (!file.exists())
                 file.mkdirs();
         }
+    }
+
+    public static void clearCacheFolder() {
+        for(String path : Arrays.asList(ART_DIR, COVER_DIR, PLAYLIST_DIR)) {
+            File file = new File(path);
+            if (file.exists())
+                deleteContent(file, false);
+        }
+    }
+
+    private static void deleteContent(File dir, boolean deleteDir) {
+        if (dir.isDirectory()) {
+            File[] files = dir.listFiles();
+            for (File file : files) {
+                deleteContent(file, true);
+            }
+        }
+        if (deleteDir)
+            dir.delete();
     }
 
     private static String getCoverFromMediaStore(Context context, Media media) {
@@ -177,7 +199,7 @@ public class AudioUtil {
     }
 
     private static String getCoverFromFolder(Context context, Media media) {
-        File f = Util.URItoFile(media.getLocation());
+        File f = LibVlcUtil.URItoFile(media.getLocation());
         if (f != null && f.getParentFile() != null && f.getParentFile().listFiles() != null)
             for (File s : f.getParentFile().listFiles()) {
                 if (s.getAbsolutePath().endsWith("png")

@@ -115,9 +115,18 @@ void setString(JNIEnv *env, jobject item, const char* field, const char* text) {
     (*env)->SetObjectField(env, item, fieldId, jstr);
 }
 
-// Returns the libvlc_media_list_t of a MediaList object
-libvlc_media_list_t* getMediaListFromJava(JNIEnv *env, jobject obj) {
-    return (libvlc_media_list_t*)(intptr_t)getLong(env, obj, "mMediaListInstance");
+void arrayListGetIDs(JNIEnv *env, jclass* p_class, jmethodID* p_add, jmethodID* p_remove) {
+    *p_class = (*env)->FindClass(env, "java/util/ArrayList");
+    if(p_add)
+        *p_add = (*env)->GetMethodID(env, *p_class, "add", "(Ljava/lang/Object;)Z");
+    if(p_remove)
+        *p_remove = (*env)->GetMethodID(env, *p_class, "remove", "(I)Ljava/lang/Object;");
+}
+
+void arrayListStringAdd(JNIEnv *env, jclass class, jmethodID methodID, jobject arrayList, const char* str) {
+    jstring jstr = (*env)->NewStringUTF(env, str);
+    (*env)->CallBooleanMethod(env, arrayList, methodID, jstr);
+    (*env)->DeleteLocalRef(env, jstr);
 }
 
 jobject getEventHandlerReference(JNIEnv *env, jobject thiz, jobject eventHandler)

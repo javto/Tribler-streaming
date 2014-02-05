@@ -24,9 +24,12 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.io.StreamCorruptedException;
 import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Method;
@@ -40,8 +43,8 @@ import org.videolan.libvlc.EventHandler;
 import org.videolan.libvlc.IVideoPlayer;
 import org.videolan.libvlc.LibVLC;
 import org.videolan.libvlc.LibVlcException;
+import org.videolan.libvlc.Media;
 import org.videolan.vlc.AudioServiceController;
-import org.videolan.vlc.Media;
 import org.videolan.vlc.MediaDatabase;
 import org.videolan.vlc.Util;
 import org.videolan.vlc.VLCApplication;
@@ -49,11 +52,6 @@ import org.videolan.vlc.WeakHandler;
 import org.videolan.vlc.gui.CommonDialogs;
 import org.videolan.vlc.gui.CommonDialogs.MenuType;
 import org.videolan.vlc.gui.PreferencesActivity;
-import org.videolan.vlc.gui.audio.AudioPlayerFragment;
-import org.videolan.vlc.interfaces.IPlayerControl;
-import org.videolan.vlc.interfaces.OnPlayerControlListener;
-import org.videolan.vlc.widget.PlayerControlClassic;
-import org.videolan.vlc.widget.PlayerControlWheel;
 
 import android.annotation.TargetApi;
 import android.app.Activity;
@@ -73,6 +71,7 @@ import android.graphics.Color;
 import android.graphics.ImageFormat;
 import android.graphics.PixelFormat;
 import android.media.AudioManager;
+import android.media.AudioManager.OnAudioFocusChangeListener;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -114,15 +113,14 @@ import com.tudelft.triblersvod.example.TorrentState;
 public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 	public final static String TAG = "VLC/VideoPlayerActivity";
 
-	public final static String KEY_LATEST_CONTENT = "key_latest_content";
-	public final static String KEY_LATEST_CONTENT_DIR = "key_latest_content_dir";
-
 	// Internal intent identifier to distinguish between internal launch and
 	// external intent.
-	protected final static String PLAY_FROM_VIDEOGRID = "org.videolan.vlc.gui.video.PLAY_FROM_VIDEOGRID";
+	private final static String PLAY_FROM_VIDEOGRID = "org.videolan.vlc.gui.video.PLAY_FROM_VIDEOGRID";
 
 	private SurfaceView mSurface;
+	private SurfaceView mSubtitlesSurface;
 	private SurfaceHolder mSurfaceHolder;
+	private SurfaceHolder mSubtitlesSurfaceHolder;
 	private FrameLayout mSurfaceFrame;
 	private LibVLC mLibVLC;
 	private String mLocation;
@@ -138,10 +136,8 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 
 	/** Overlay */
 	private View mOverlayHeader;
-	private View mOverlayLock;
 	private View mOverlayOption;
 	private View mOverlayProgress;
-	private View mOverlayInterface;
 	private static final int OVERLAY_TIMEOUT = 4000;
 	private static final int OVERLAY_INFINITE = 3600000;
 	private static final int FADE_OUT = 1;
@@ -158,8 +154,10 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 	private TextView mTime;
 	private TextView mLength;
 	private TextView mInfo;
-	private IPlayerControl mControls;
-	private boolean mEnableWheelbar;
+	private ImageButton mPlayPause;
+	private ImageButton mBackward;
+	private ImageButton mForward;
+	private boolean mEnableJumpButtons;
 	private boolean mEnableBrightnessGesture;
 	private boolean mDisplayRemainingTime = false;
 	private int mScreenOrientation;
@@ -167,6 +165,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 	private ImageButton mSubtitle;
 	private ImageButton mLock;
 	private ImageButton mSize;
+	private ImageButton mMenu;
 	private boolean mIsLocked = false;
 	private int mLastAudioTrack = -1;
 	private int mLastSpuTrack = -2;
@@ -176,6 +175,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 	 */
 	private boolean mSwitchingView;
 	private boolean mEndReached;
+	private boolean mCanSeek;
 
 	// Playlist
 	private int savedIndexPosition = -1;
@@ -191,6 +191,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 	// Volume
 	private AudioManager mAudioManager;
 	private int mAudioMax;
+	private OnAudioFocusChangeListener mAudioFocusListener;
 
 	// Touch Events
 	private static final int TOUCH_NONE = 0;
@@ -214,11 +215,10 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 	 */
 	private ArrayList<String> mSubtitleSelectedFiles = new ArrayList<String>();
 
-	public VideoPlayerActivity() {
-
-	}
-
 	// TRIBLER
+	public final static String KEY_LATEST_CONTENT = "key_latest_content";
+	public final static String KEY_LATEST_CONTENT_DIR = "key_latest_content_dir";
+
 	private static boolean torrentFile; // does it have a torrent loaded in libt
 	private static String contentName = "";
 	private static long fileLength;
@@ -238,7 +238,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 	private static InitAsyncTask initAsyncTask;
 	private static WaitForMetaDataTask waitDataTask;
 	private static SeekTask seekTask;
-	
+
 	private LibTorrent libTorrent(int listenPort, int uploadLimit,
 			int downloadLimit, boolean encryption) {
 		return ((VLCApplication) getApplication()).getLibTorrent(listenPort,
@@ -253,7 +253,6 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 	@TargetApi(Build.VERSION_CODES.HONEYCOMB)
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		Log.d("LIFECYCLE", "onCreate");
 		setContentView(R.layout.player);
 
 		// TRIBLER INIT
@@ -288,7 +287,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 											mVideoVisibleHeight, mSarNum,
 											mSarDen);
 									if (visibility == View.SYSTEM_UI_FLAG_VISIBLE
-											&& !mShowing) {
+											&& !mShowing && !isFinishing()) {
 										showOverlay();
 									}
 									mUiVisibility = visibility;
@@ -297,10 +296,8 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 
 		/** initialize Views an their Events */
 		mOverlayHeader = findViewById(R.id.player_overlay_header);
-		mOverlayLock = findViewById(R.id.lock_overlay);
 		mOverlayOption = findViewById(R.id.option_overlay);
 		mOverlayProgress = findViewById(R.id.progress_overlay);
-		mOverlayInterface = findViewById(R.id.interface_overlay);
 
 		/* header */
 		mTitle = (TextView) findViewById(R.id.player_overlay_title);
@@ -316,42 +313,32 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 		// the info textView is not on the overlay
 		mInfo = (TextView) findViewById(R.id.player_overlay_info);
 
-		mEnableWheelbar = pref.getBoolean("enable_wheel_bar", false);
 		mEnableBrightnessGesture = pref.getBoolean("enable_brightness_gesture",
 				true);
 		mScreenOrientation = Integer
 				.valueOf(pref
 						.getString("screen_orientation_value", "4" /* SCREEN_ORIENTATION_SENSOR */));
 
-		mControls = mEnableWheelbar ? new PlayerControlWheel(this)
-				: new PlayerControlClassic(this);
-		mControls.setOnPlayerControlListener(mPlayerControlListener);
-		FrameLayout mControlContainer = (FrameLayout) findViewById(R.id.player_control);
-		mControlContainer.addView((View) mControls);
+		mEnableJumpButtons = pref.getBoolean("enable_jump_buttons", false);
+		mPlayPause = (ImageButton) findViewById(R.id.player_overlay_play);
+		mPlayPause.setOnClickListener(mPlayPauseListener);
+		mBackward = (ImageButton) findViewById(R.id.player_overlay_backward);
+		mBackward.setOnClickListener(mBackwardListener);
+		mForward = (ImageButton) findViewById(R.id.player_overlay_forward);
+		mForward.setOnClickListener(mForwardListener);
 
 		mAudioTrack = (ImageButton) findViewById(R.id.player_overlay_audio);
 		mAudioTrack.setVisibility(View.GONE);
 		mSubtitle = (ImageButton) findViewById(R.id.player_overlay_subtitle);
 		mSubtitle.setVisibility(View.GONE);
 
-		mHandler.postDelayed(new Runnable() {
-			@Override
-			public void run() {
-				/*
-				 * FIXME The setTracksAndSubtitles method probably doesn't work
-				 * in case of many many Tracks and Subtitles Moreover, in a
-				 * video stream, if Tracks & Subtitles change, they won't be
-				 * updated
-				 */
-				setESTrackLists();
-			}
-		}, 1500);
-
 		mLock = (ImageButton) findViewById(R.id.lock_overlay_button);
 		mLock.setOnClickListener(mLockListener);
 
 		mSize = (ImageButton) findViewById(R.id.player_overlay_size);
 		mSize.setOnClickListener(mSizeListener);
+
+		mMenu = (ImageButton) findViewById(R.id.player_overlay_adv_function);
 
 		mSurface = (SurfaceView) findViewById(R.id.player_surface);
 		mSurfaceHolder = mSurface.getHolder();
@@ -365,6 +352,12 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 			mSurfaceHolder.setFormat(PixelFormat.RGBX_8888);
 		}
 		mSurfaceHolder.addCallback(mSurfaceCallback);
+
+		mSubtitlesSurface = (SurfaceView) findViewById(R.id.subtitles_surface);
+		mSubtitlesSurfaceHolder = mSubtitlesSurface.getHolder();
+		mSubtitlesSurfaceHolder.setFormat(PixelFormat.RGBA_8888);
+		mSubtitlesSurface.setZOrderMediaOverlay(true);
+		mSubtitlesSurfaceHolder.addCallback(mSubtitlesSurfaceCallback);
 
 		mSeekbar = (SeekBar) findViewById(R.id.player_overlay_seekbar);
 		mSeekbar.setOnSeekBarChangeListener(mSeekListener);
@@ -398,6 +391,9 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 			Log.d(TAG, "LibVLC initialisation failed");
 			return;
 		}
+		/* Only show the subtitles surface when using "Full Acceleration" mode */
+		if (mLibVLC.getHardwareAcceleration() == 2)
+			mSubtitlesSurface.setVisibility(View.VISIBLE);
 
 		EventHandler em = EventHandler.getInstance();
 		em.addHandler(eventHandler);
@@ -410,23 +406,14 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 	}
 
 	@Override
-	protected void onStart() {
-		Log.d("LIFECYCLE", "onStart");
-		super.onStart();
-		showOverlay();
-		mSwitchingView = false;
-	}
-
-	@Override
 	protected void onPause() {
-		Log.d("LIFECYCLE", "onPause");
 		super.onPause();
+
 		if (mSwitchingView) {
 			Log.d(TAG, "mLocation = \"" + mLocation + "\"");
 			AudioServiceController.getInstance().showWithoutParse(
 					savedIndexPosition);
 			AudioServiceController.getInstance().unbindAudioService(this);
-			AudioPlayerFragment.start(this);
 			return;
 		}
 
@@ -453,9 +440,8 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 				PreferencesActivity.NAME, MODE_PRIVATE);
 		SharedPreferences.Editor editor = preferences.edit();
 		// Save position
-		if (time >= 0) {
+		if (time >= 0 && mCanSeek) {
 			if (MediaDatabase.getInstance(this).mediaItemExists(mLocation)) {
-				editor.putString(PreferencesActivity.LAST_MEDIA, mLocation);
 				MediaDatabase.getInstance(this).updateMedia(mLocation,
 						MediaDatabase.mediaColumn.MEDIA_TIME, time);
 			} else {
@@ -481,43 +467,38 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 
 		editor.commit();
 		AudioServiceController.getInstance().unbindAudioService(this);
-
 	}
 
 	@Override
 	protected void onStop() {
-		Log.d("LIFECYCLE", "onStop");
 		super.onStop();
-		Log.d("check", asyncTaskRunning.toString());
 		// TRIBLER
 		if (!contentName.isEmpty()) {
 			libTorrent().PauseTorrent(contentName);
 		}
 		libTorrent().PauseSession();
-		//cancel asynctasks
-		if(asyncTaskRunning.contains("load()")) {
+		// cancel asynctasks
+		if (asyncTaskRunning.contains("load()")) {
 			initAsyncTask.cancel(true);
-		} else if (asyncTaskRunning.contains("waitForMetaData()")) {
+		}
+		if (asyncTaskRunning.contains("waitForMetaData()")) {
 			waitDataTask.cancel(true);
-		} else if (asyncTaskRunning.contains("setDownloadPrioritySeekTo()")) {
+		}
+		if (asyncTaskRunning.contains("setDownloadPrioritySeekTo()")) {
 			seekTask.cancel(true);
 		}
 	}
 
 	@Override
 	protected void onDestroy() {
-		Log.d("LIFECYCLE", "onDestroy");
 		super.onDestroy();
 		unregisterReceiver(mReceiver);
-		if (mLibVLC != null && !mSwitchingView) {
-			mLibVLC.stop();
-		}
 
 		EventHandler em = EventHandler.getInstance();
 		em.removeHandler(eventHandler);
 
 		mAudioManager = null;
-
+		
 		// TRIBLER
 		initCompleted = false;
 		metaDataDone = false;
@@ -525,7 +506,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 		inMetaDataWait = false;
 		magnet = false;
 		torrentFile = false;
-		
+
 		if (!contentName.isEmpty()) {
 			libTorrent().RemoveTorrent(contentName);
 		}
@@ -536,8 +517,6 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 	@Override
 	protected void onResume() {
 		super.onResume();
-		Log.d("LIFECYCLE", "onResume");
-		Log.d("check", asyncTaskRunning.toString());
 		if (!inMetaDataWait) {
 			onTriblerResume();
 		}
@@ -550,13 +529,16 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 		Log.d("STATES", "inMetaDataWait: " + inMetaDataWait);
 		Log.d("STATES", "magnet: " + magnet);
 		Log.d("STATES", "torrentFile: " + torrentFile);
-		Log.d("STATES", "Number of torrents in liBT: " + libTorrent().GetNumberOfTorrents());
+		Log.d("STATES", "Number of torrents in liBT: "
+				+ libTorrent().GetNumberOfTorrents());
 		Log.d("STATES", "session active: " + libTorrent().GetSessionState());
 	}
 
 	// TRIBLER
 	private void onTriblerResume() {
+		mSwitchingView = false;
 		AudioServiceController.getInstance().bindAudioService(this);
+
 
 		// for debugging:
 		logStates();
@@ -567,15 +549,14 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 		logStates();
 
 		Log.d("check", asyncTaskRunning.toString());
-		if(!libTorrent().GetSessionState()) {
+		if (!libTorrent().GetSessionState()) {
 			libTorrent().ResumeSession();
 		}
-		if (!contentName.isEmpty() && initCompleted) {
+		if (!contentName.isEmpty()) {
 			Log.d(TAG, "start isn't empty");
-			
 			libTorrent().ResumeTorrent(contentName);
 		}
-		
+
 		/*
 		 * if the activity has been paused by pressing the power button,
 		 * pressing it again will show the lock screen. But onResume will also
@@ -593,7 +574,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 			}
 		}, 500);
 
-		showOverlay();
+		//showOverlay();
 
 		// Add any selected subtitle file from the file picker
 		if (mSubtitleSelectedFiles.size() > 0) {
@@ -601,26 +582,9 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 				Log.i(TAG, "Adding user-selected subtitle " + file);
 				mLibVLC.addSubtitleTrack(file);
 			}
-			/**
-			 * FIXME remove when #7540 ES are not updated mid-stream a.k.a.
-			 * subtitle events is fixed
-			 */
-			mHandler.postDelayed(new Runnable() {
-				@Override
-				public void run() {
-					setESTrackLists(true);
-
-					mHandler.postDelayed(new Runnable() {
-						@Override
-						public void run() {
-							setESTrackLists(true);
-						}
-					}, 1200);
-				}
-			}, 1000);
 		}
 	}
-
+		
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 		if (data == null)
@@ -741,10 +705,11 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 				setRequestedOrientation(getScreenOrientation());
 		}
 		showInfo(R.string.locked, 1000);
-		mLock.setBackgroundResource(R.drawable.ic_lock_glow);
+		mLock.setBackgroundResource(R.drawable.locked);
 		mTime.setEnabled(false);
 		mSeekbar.setEnabled(false);
 		mLength.setEnabled(false);
+		mMenu.setEnabled(false);
 		hideOverlay(true);
 	}
 
@@ -755,10 +720,11 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 		if (mScreenOrientation == ActivityInfo.SCREEN_ORIENTATION_SENSOR)
 			setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR);
 		showInfo(R.string.unlocked, 1000);
-		mLock.setBackgroundResource(R.drawable.ic_lock);
+		mLock.setBackgroundResource(R.drawable.lock);
 		mTime.setEnabled(true);
 		mSeekbar.setEnabled(true);
 		mLength.setEnabled(true);
+		mMenu.setEnabled(true);
 		mShowing = false;
 		showOverlay();
 	}
@@ -817,6 +783,44 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 		mInfo.setVisibility(View.INVISIBLE);
 	}
 
+	@TargetApi(Build.VERSION_CODES.FROYO)
+	private void changeAudioFocus(boolean gain) {
+		if (!Util.isFroyoOrLater()) // NOP if not supported
+			return;
+
+		if (mAudioFocusListener == null) {
+			mAudioFocusListener = new OnAudioFocusChangeListener() {
+				@Override
+				public void onAudioFocusChange(int focusChange) {
+					/*
+					 * Pause playback during alerts and notifications
+					 */
+					switch (focusChange) {
+					case AudioManager.AUDIOFOCUS_LOSS:
+					case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
+					case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK:
+						if (mLibVLC.isPlaying())
+							mLibVLC.pause();
+						break;
+					case AudioManager.AUDIOFOCUS_GAIN:
+					case AudioManager.AUDIOFOCUS_GAIN_TRANSIENT:
+					case AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK:
+						if (!mLibVLC.isPlaying())
+							mLibVLC.play();
+						break;
+					}
+				}
+			};
+		}
+
+		AudioManager am = (AudioManager) getSystemService(AUDIO_SERVICE);
+		if (gain)
+			am.requestAudioFocus(mAudioFocusListener,
+					AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN);
+		else
+			am.abandonAudioFocus(mAudioFocusListener);
+	}
+
 	/**
 	 * Handle libvlc asynchronous events
 	 */
@@ -837,10 +841,17 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 			switch (msg.getData().getInt("event")) {
 			case EventHandler.MediaPlayerPlaying:
 				Log.i(TAG, "MediaPlayerPlaying");
+				activity.showOverlay();
+				/**
+				 * FIXME: update the track list when it changes during the
+				 * playback. (#7540)
+				 */
 				// TRIBLER
 				if (VideoPlayerActivity.initCompleted
 						&& VideoPlayerActivity.seekBufferCompleted) {
+					activity.setESTrackLists(true);
 					activity.setESTracks();
+					activity.changeAudioFocus(true);
 				}
 				break;
 			case EventHandler.MediaPlayerPaused:
@@ -848,15 +859,19 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 				break;
 			case EventHandler.MediaPlayerStopped:
 				Log.i(TAG, "MediaPlayerStopped");
+				activity.changeAudioFocus(false);
 				break;
 			case EventHandler.MediaPlayerEndReached:
 				Log.i(TAG, "MediaPlayerEndReached");
+				activity.changeAudioFocus(false);
 				activity.endReached();
 				break;
 			case EventHandler.MediaPlayerVout:
 				activity.handleVout(msg);
 				break;
 			case EventHandler.MediaPlayerPositionChanged:
+				if (!activity.mCanSeek)
+					activity.mCanSeek = true;
 				// don't spam the logs
 				break;
 			case EventHandler.MediaPlayerEncounteredError:
@@ -912,11 +927,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 
 	private boolean canShowProgress() {
 		// TRIBLER
-		if (metaDataDone) {
-			return true;
-		}
-		return false;
-		// return !mDragging && mShowing && mLibVLC.isPlaying();
+		return !mDragging && mShowing && mLibVLC.isPlaying() && metaDataDone;
 	}
 
 	private void endReached() {
@@ -929,6 +940,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 				}
 			}, 1000);
 		} else if (torrentFile) {
+			//TODO (maybe delete this stuff?)
 			mEndReached = false;
 			initCompleted = false;
 			seekBufferCompleted = false;
@@ -965,16 +977,17 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 
 	private void changeSurfaceSize() {
 		// get screen size
-		int dw = getWindow().getDecorView().getWidth();
-		int dh = getWindow().getDecorView().getHeight();
+		int sw = getWindow().getDecorView().getWidth();
+		int sh = getWindow().getDecorView().getHeight();
+
+		double dw = sw, dh = sh;
 
 		// getWindow().getDecorView() doesn't always take orientation into
 		// account, we have to correct the values
 		boolean isPortrait = getResources().getConfiguration().orientation == Configuration.ORIENTATION_PORTRAIT;
-		if (dw > dh && isPortrait || dw < dh && !isPortrait) {
-			int d = dw;
-			dw = dh;
-			dh = d;
+		if (sw > sh && isPortrait || sw < sh && !isPortrait) {
+			dw = sh;
+			dh = sw;
 		}
 
 		// sanity check
@@ -997,59 +1010,62 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 		}
 
 		// compute the display aspect ratio
-		double dar = (double) dw / (double) dh;
+		double dar = dw / dh;
 
 		switch (mCurrentSize) {
 		case SURFACE_BEST_FIT:
 			if (dar < ar)
-				dh = (int) (dw / ar);
+				dh = dw / ar;
 			else
-				dw = (int) (dh * ar);
+				dw = dh * ar;
 			break;
 		case SURFACE_FIT_HORIZONTAL:
-			dh = (int) (dw / ar);
+			dh = dw / ar;
 			break;
 		case SURFACE_FIT_VERTICAL:
-			dw = (int) (dh * ar);
+			dw = dh * ar;
 			break;
 		case SURFACE_FILL:
 			break;
 		case SURFACE_16_9:
 			ar = 16.0 / 9.0;
 			if (dar < ar)
-				dh = (int) (dw / ar);
+				dh = dw / ar;
 			else
-				dw = (int) (dh * ar);
+				dw = dh * ar;
 			break;
 		case SURFACE_4_3:
 			ar = 4.0 / 3.0;
 			if (dar < ar)
-				dh = (int) (dw / ar);
+				dh = dw / ar;
 			else
-				dw = (int) (dh * ar);
+				dw = dh * ar;
 			break;
 		case SURFACE_ORIGINAL:
 			dh = mVideoVisibleHeight;
-			dw = (int) vw;
+			dw = vw;
 			break;
 		}
 
 		// force surface buffer size
 		mSurfaceHolder.setFixedSize(mVideoWidth, mVideoHeight);
+		mSubtitlesSurfaceHolder.setFixedSize(mVideoWidth, mVideoHeight);
 
 		// set display size
 		LayoutParams lp = mSurface.getLayoutParams();
-		lp.width = dw * mVideoWidth / mVideoVisibleWidth;
-		lp.height = dh * mVideoHeight / mVideoVisibleHeight;
+		lp.width = (int) Math.ceil(dw * mVideoWidth / mVideoVisibleWidth);
+		lp.height = (int) Math.ceil(dh * mVideoHeight / mVideoVisibleHeight);
 		mSurface.setLayoutParams(lp);
+		mSubtitlesSurface.setLayoutParams(lp);
 
 		// set frame size (crop if necessary)
 		lp = mSurfaceFrame.getLayoutParams();
-		lp.width = dw;
-		lp.height = dh;
+		lp.width = (int) Math.floor(dw);
+		lp.height = (int) Math.floor(dh);
 		mSurfaceFrame.setLayoutParams(lp);
 
 		mSurface.invalidate();
+		mSubtitlesSurface.invalidate();
 	}
 
 	/**
@@ -1059,7 +1075,14 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 	@Override
 	public boolean onTouchEvent(MotionEvent event) {
 		if (mIsLocked) {
-			showOverlay();
+			// locked, only handle show/hide & ignore all actions
+			if (event.getAction() == MotionEvent.ACTION_UP) {
+				if (!mShowing) {
+					showOverlay();
+				} else {
+					hideOverlay(true);
+				}
+			}
 			return false;
 		}
 
@@ -1130,7 +1153,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 
 	private void doSeekTouch(float coef, float gesturesize, boolean seek) {
 		// No seek action if coef > 0.5 and gesturesize < 1cm
-		if (mEnableWheelbar || coef > 0.5 || Math.abs(gesturesize) < 1)
+		if (coef > 0.5 || Math.abs(gesturesize) < 1 || !mCanSeek)
 			return;
 
 		if (mTouchAction != TOUCH_NONE && mTouchAction != TOUCH_SEEK)
@@ -1156,14 +1179,17 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 			jump = (int) -time;
 
 		// Jump !
-		if (seek)
-			mPlayerControlListener.onSeekTo(time + jump);
+		if (seek && length > 0)
+			mLibVLC.setTime(time + jump);
 
-		// Show the jump's size
-		showInfo(
-				String.format("%s%s (%s)", jump >= 0 ? "+" : "",
-						Util.millisToString(jump),
-						Util.millisToString(time + jump)), 1000);
+		if (length > 0)
+			// Show the jump's size
+			showInfo(
+					String.format("%s%s (%s)", jump >= 0 ? "+" : "",
+							Util.millisToString(jump),
+							Util.millisToString(time + jump)), 1000);
+		else
+			showInfo(R.string.unseekable_stream, 1000);
 	}
 
 	private void doVolumeTouch(float y_changed) {
@@ -1224,12 +1250,13 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 	 * handle changes of the seekbar (slicer)
 	 */
 	private final OnSeekBarChangeListener mSeekListener = new OnSeekBarChangeListener() {
-
+		
 		@Override
 		public void onStartTrackingTouch(SeekBar seekBar) {
 			mDragging = true;
-			mLibVLC.pause();
 			showOverlay(OVERLAY_INFINITE);
+			//TRIBLER
+			mLibVLC.pause();
 		}
 
 		@Override
@@ -1242,11 +1269,15 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 		@Override
 		public void onProgressChanged(SeekBar seekBar, int progress,
 				boolean fromUser) {
-			if (fromUser) {
-				if (mLibVLC.isSeekable() && initCompleted) {
+			if (fromUser && mCanSeek) {
+				if (initCompleted) {
 					seekBufferCompleted = false;
 					setDownloadPrioritySeekTo(progress);
 				}
+				//mLibVLC.setTime(progress);
+				//setOverlayProgress();
+				//mTime.setText(Util.millisToString(progress));
+				//showInfo(Util.millisToString(progress));
 			}
 		}
 	};
@@ -1364,54 +1395,48 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 	/**
     *
     */
-	private final OnPlayerControlListener mPlayerControlListener = new OnPlayerControlListener() {
+	private final OnClickListener mPlayPauseListener = new OnClickListener() {
 		@Override
-		public void onPlayPause() {
+		public void onClick(View v) {
 			if (mLibVLC.isPlaying())
 				pause();
 			else
 				play();
 			showOverlay();
 		}
+	};
 
+	/**
+    *
+    */
+	private final OnClickListener mBackwardListener = new OnClickListener() {
 		@Override
-		public void onSeek(int delta) {
-			// unseekable stream
-			if (mLibVLC.getLength() <= 0)
-				return;
-
-			long position = mLibVLC.getTime() + delta;
-			if (position < 0)
-				position = 0;
-			mLibVLC.setTime(position);
-			showOverlay();
-		}
-
-		@Override
-		public void onSeekTo(long position) {
-			// unseekable stream
-			if (mLibVLC.getLength() <= 0)
-				return;
-			mLibVLC.setTime(position);
-			mTime.setText(Util.millisToString(position));
-		}
-
-		@Override
-		public long onWheelStart() {
-			showOverlay(OVERLAY_INFINITE);
-			return mLibVLC.getTime();
-		}
-
-		@Override
-		public void onShowInfo(String info) {
-			if (info != null)
-				showInfo(info);
-			else {
-				hideInfo();
-				showOverlay();
-			}
+		public void onClick(View v) {
+			seek(-10000);
 		}
 	};
+
+	/**
+    *
+    */
+	private final OnClickListener mForwardListener = new OnClickListener() {
+		@Override
+		public void onClick(View v) {
+			seek(10000);
+		}
+	};
+
+	public void seek(int delta) {
+		// unseekable stream
+		if (mLibVLC.getLength() <= 0 || !mCanSeek)
+			return;
+
+		long position = mLibVLC.getTime() + delta;
+		if (position < 0)
+			position = 0;
+		mLibVLC.setTime(position);
+		showOverlay();
+	}
 
 	/**
      *
@@ -1493,8 +1518,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 				Log.d(TAG, "Pixel format is YV12");
 			else
 				Log.d(TAG, "Pixel format is other/unknown");
-			mLibVLC.attachSurface(holder.getSurface(),
-					VideoPlayerActivity.this, width, height);
+			mLibVLC.attachSurface(holder.getSurface(), VideoPlayerActivity.this);
 		}
 
 		@Override
@@ -1507,8 +1531,25 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 		}
 	};
 
+	private final SurfaceHolder.Callback mSubtitlesSurfaceCallback = new Callback() {
+		@Override
+		public void surfaceChanged(SurfaceHolder holder, int format, int width,
+				int height) {
+			mLibVLC.attachSubtitlesSurface(holder.getSurface());
+		}
+
+		@Override
+		public void surfaceCreated(SurfaceHolder holder) {
+		}
+
+		@Override
+		public void surfaceDestroyed(SurfaceHolder holder) {
+			mLibVLC.detachSubtitlesSurface();
+		}
+	};
+
 	/**
-	 * show overlay the default timeout
+	 * show overlay the the default timeout
 	 */
 	private void showOverlay() {
 		showOverlay(OVERLAY_TIMEOUT);
@@ -1521,24 +1562,32 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 		mHandler.sendEmptyMessage(SHOW_PROGRESS);
 		if (!mShowing) {
 			mShowing = true;
-			mOverlayLock.setVisibility(View.VISIBLE);
 			if (!mIsLocked) {
 				mOverlayHeader.setVisibility(View.VISIBLE);
 				mOverlayOption.setVisibility(View.VISIBLE);
-				mOverlayInterface.setVisibility(View.VISIBLE);
-				mSeekbar.setVisibility(View.VISIBLE);
-				mTime.setVisibility(View.VISIBLE);
-				mLength.setVisibility(View.VISIBLE);
+				mPlayPause.setVisibility(View.VISIBLE);
+				dimStatusBar(false);
+				//TRIBLER
+				//mSeekbar.setVisibility(View.VISIBLE);
+				//mTime.setVisibility(View.VISIBLE);
+				//mLength.setVisibility(View.VISIBLE);
+				
 				SharedPreferences pref = PreferenceManager
 						.getDefaultSharedPreferences(this);
 				findViewById(R.id.libtorrent_debug)
 						.setVisibility(
 								(pref.getBoolean("libtorrent_debug", true) ? View.VISIBLE
 										: View.INVISIBLE));
-				dimStatusBar(false);
 			}
+			
 			mOverlayProgress.setVisibility(View.VISIBLE);
 		}
+		Message msg = mHandler.obtainMessage(FADE_OUT);
+		if (timeout != 0) {
+			mHandler.removeMessages(FADE_OUT);
+			mHandler.sendMessageDelayed(msg, timeout);
+		}
+		updateOverlayPausePlay();
 	}
 
 	/**
@@ -1549,25 +1598,29 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 			mHandler.removeMessages(SHOW_PROGRESS);
 			Log.i(TAG, "remove View!");
 			if (!fromUser && !mIsLocked) {
-				mOverlayLock.startAnimation(AnimationUtils.loadAnimation(this,
-						android.R.anim.fade_out));
 				mOverlayHeader.startAnimation(AnimationUtils.loadAnimation(
 						this, android.R.anim.fade_out));
 				mOverlayOption.startAnimation(AnimationUtils.loadAnimation(
 						this, android.R.anim.fade_out));
-				mOverlayInterface.startAnimation(AnimationUtils.loadAnimation(
+				mOverlayProgress.startAnimation(AnimationUtils.loadAnimation(
 						this, android.R.anim.fade_out));
+				mPlayPause.startAnimation(AnimationUtils.loadAnimation(this,
+						android.R.anim.fade_out));
 			}
-			mOverlayLock.setVisibility(View.INVISIBLE);
 			mOverlayHeader.setVisibility(View.INVISIBLE);
 			mOverlayOption.setVisibility(View.INVISIBLE);
-			mSeekbar.setVisibility(View.INVISIBLE);
-			mTime.setVisibility(View.INVISIBLE);
-			mLength.setVisibility(View.INVISIBLE);
-			mOverlayInterface.setVisibility(View.INVISIBLE);
-			findViewById(R.id.libtorrent_debug).setVisibility(View.INVISIBLE);
+			mOverlayProgress.setVisibility(View.INVISIBLE);
+			mPlayPause.setVisibility(View.INVISIBLE);
 			mShowing = false;
 			dimStatusBar(true);
+			//TRIBLER
+			//mSeekbar.setVisibility(View.INVISIBLE);
+			//mTime.setVisibility(View.INVISIBLE);
+			//mLength.setVisibility(View.INVISIBLE);
+			
+			findViewById(R.id.libtorrent_debug).setVisibility(View.INVISIBLE);
+			
+			
 		}
 	}
 
@@ -1583,24 +1636,28 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 		if (!Util.hasCombBar() && Util.isJellyBeanOrLater())
 			layout = View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
 					| View.SYSTEM_UI_FLAG_LAYOUT_STABLE;
-		mSurface.setSystemUiVisibility((dim ? (Util.hasCombBar() ? View.SYSTEM_UI_FLAG_LOW_PROFILE
+		int visibility = (dim ? (Util.hasCombBar() ? View.SYSTEM_UI_FLAG_LOW_PROFILE
 				: View.SYSTEM_UI_FLAG_HIDE_NAVIGATION)
 				: View.SYSTEM_UI_FLAG_VISIBLE)
-				| layout);
+				| layout;
+		mSurface.setSystemUiVisibility(visibility);
+		mSubtitlesSurface.setSystemUiVisibility(visibility);
 	}
 
 	private void updateOverlayPausePlay() {
 		if (mLibVLC == null) {
 			return;
 		}
-		Log.d(TAG, "updateOverlayPausePlay");
 		// TRIBLER
-		if (initCompleted && seekBufferCompleted) {
-			mControls.setState(mLibVLC.isPlaying());
-			// mLibVLC.play();
-		} else {
-			mControls.setState(false);
-		}
+		//if (initCompleted && seekBufferCompleted) {
+		//	mControls.setState(mLibVLC.isPlaying());
+		//	// mLibVLC.play();
+		//} else {
+		//	mControls.setState(false);
+		//}
+		mPlayPause
+				.setBackgroundResource(mLibVLC.isPlaying() ? R.drawable.pause_circle
+						: R.drawable.play_circle);
 	}
 
 	/**
@@ -1613,15 +1670,16 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 		int time = (int) mLibVLC.getTime();
 		int length = (int) mLibVLC.getLength();
 		if (length == 0) {
-			Media media = MediaDatabase.getInstance(this).getMedia(this,
-					mLocation);
+			Media media = MediaDatabase.getInstance(this).getMedia(mLocation);
 			if (media != null)
 				length = (int) media.getLength();
 		}
 
 		// Update all view elements
-		mControls.setSeekable(length > 0);
-		// TRIBLER
+		boolean isSeekable = mEnableJumpButtons && length > 0;
+		mBackward.setVisibility(isSeekable ? View.VISIBLE : View.GONE);
+		mForward.setVisibility(isSeekable ? View.VISIBLE : View.GONE);
+		//TRIBLER
 		mSeekbar.setMax(length == 0 ? (int) fileLength : length);
 		mSeekbar.setProgress(time);
 		mSysTime.setText(DateFormat.getTimeFormat(this).format(
@@ -1632,7 +1690,6 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 			mLength.setText(mDisplayRemainingTime && length > 0 ? "- "
 					+ Util.millisToString(length - time) : Util
 					.millisToString(length));
-
 		// TRIBLER
 		if (torrentFile || magnet) {
 			int max = mSeekbar.getMax();
@@ -1662,7 +1719,6 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 										.getName());
 			}
 		}
-
 		return time;
 	}
 
@@ -1675,10 +1731,6 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 			mLibVLC.setSpuTrack(mLastSpuTrack);
 			mLastSpuTrack = -2;
 		}
-	}
-
-	private void setESTrackLists() {
-		setESTrackLists(false);
 	}
 
 	private void setESTrackLists(boolean force) {
@@ -1708,7 +1760,6 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
      *
      */
 	private void play() {
-		Log.d("PLAY", "play()");
 		mLibVLC.play();
 		mSurface.setKeepScreenOn(true);
 	}
@@ -1717,11 +1768,10 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
      *
      */
 	private void pause() {
-		Log.d("PLAY", "pause()");
 		mLibVLC.pause();
 		mSurface.setKeepScreenOn(false);
 	}
-
+	
 	// TRIBLER
 	private File getTorrentDownloadDir() {
 		return new File(new File(Environment.getExternalStorageDirectory(),
@@ -1775,7 +1825,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 			Log.d("SEEK TO", "set piece priorities");
 			seekTask = new SeekTask(progress, startNewDownloadHere);
 			seekTask.execute();
-			
+
 		} else {
 			Log.d(TAG, "No end time specified");
 		}
@@ -1794,7 +1844,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 				"deleting previous torrent cache if != lastContent");
 		contentName = magnet ? libTorrent().GetMagnetContentFileName(mLocation)
 				: libTorrent().GetTorrentName(mLocation);
-		if(contentName == null) {
+		if (contentName == null) {
 			showError("couldn't get content file name, please check internet connectivity and link");
 		}
 		Log.d("Deleting cache", "current content: " + contentName);
@@ -1954,21 +2004,24 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 		waitDataTask = new WaitForMetaDataTask(savePath.getAbsolutePath());
 		waitDataTask.execute();
 	}
-
+	
 	private void showError(String msg) {
 		Toast.makeText(this, msg, Toast.LENGTH_LONG).show();
 		finish();
 	}
 
+	
 	/**
 	 * External extras: - position (long) - position of the video to start with
 	 * (in ms)
 	 */
-	@SuppressWarnings("deprecation")
+	@SuppressWarnings({ "deprecation", "unchecked" })
 	private void load() {
 		mLocation = null;
+		String title = getResources().getString(R.string.title);
+		boolean dontParse = false;
 		boolean fromStart = false;
-		String itemTitle = "";
+		String itemTitle = null;
 		int itemPosition = -1; // Index in the media list as passed by
 								// AudioServer (used only for vout transition
 								// internally)
@@ -1990,14 +2043,62 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 					if (cursor.moveToFirst())
 						mLocation = LibVLC.PathToURI(cursor
 								.getString(column_index));
+				} else if (getIntent().getData().getHost()
+						.equals("com.fsck.k9.attachmentprovider")
+						|| getIntent().getData().getHost().equals("gmail-ls")) {
+					// Mail-based apps - download the stream to a temporary file
+					// and play it
+					try {
+						Cursor cursor = getContentResolver()
+								.query(getIntent().getData(),
+										new String[] { MediaStore.MediaColumns.DISPLAY_NAME },
+										null, null, null);
+						cursor.moveToFirst();
+						String filename = cursor
+								.getString(cursor
+										.getColumnIndex(MediaStore.MediaColumns.DISPLAY_NAME));
+						Log.i(TAG, "Getting file " + filename
+								+ " from content:// URI");
+						InputStream is = getContentResolver().openInputStream(
+								getIntent().getData());
+						OutputStream os = new FileOutputStream(Environment
+								.getExternalStorageDirectory().getPath()
+								+ "/Download/" + filename);
+						byte[] buffer = new byte[1024];
+						int bytesRead = 0;
+						while ((bytesRead = is.read(buffer)) >= 0) {
+							os.write(buffer, 0, bytesRead);
+						}
+						os.close();
+						is.close();
+						mLocation = LibVLC.PathToURI(Environment
+								.getExternalStorageDirectory().getPath()
+								+ "/Download/" + filename);
+					} catch (Exception e) {
+						Log.e(TAG, "Couldn't download file from mail URI");
+						encounteredError();
+					}
 				} else {
 					// other content-based URI (probably file pickers)
 					mLocation = getIntent().getData().getPath();
 				}
 			} else {
 				// Plain URI
+				mLocation = getIntent().getDataString();
+				// Remove VLC prefix if needed
+				if (mLocation.startsWith("vlc://")) {
+					mLocation = mLocation.substring(6);
+				}
 				mLocation = Uri.decode(getIntent().getDataString());
 				Log.d(TAG, "datastring: " + mLocation);
+				// Decode URI
+				if (!mLocation.contains("/")) {
+					try {
+						mLocation = URLDecoder.decode(mLocation, "UTF-8");
+					} catch (UnsupportedEncodingException e) {
+						e.printStackTrace();
+					}
+				}
 			}
 			if (getIntent().getExtras() != null)
 				intentPosition = getIntent().getExtras()
@@ -2006,15 +2107,15 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 				&& getIntent().getAction().equals(PLAY_FROM_VIDEOGRID)
 				&& getIntent().getExtras() != null) {
 			/* Started from VideoListActivity */
-			mLocation = Uri.decode(getIntent().getExtras().getString(
-					"itemLocation"));
+			mLocation = getIntent().getExtras().getString("itemLocation");
 			itemTitle = getIntent().getExtras().getString("itemTitle");
+			dontParse = getIntent().getExtras().getBoolean("dontParse");
 			fromStart = getIntent().getExtras().getBoolean("fromStart");
 			itemPosition = getIntent().getExtras().getInt("itemPosition", -1);
 		}
 
-		// TRIBLER
 		mSurface.setKeepScreenOn(true);
+		// TRIBLER
 
 		if (mLocation != null
 				&& (mLocation.endsWith(".torrent") || mLocation
@@ -2028,7 +2129,8 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 				savePath = addMagnet();
 				logStates();
 				if (savePath != null) {
-					//TODO get rid of other torrent which isn't the new contentName if getNoT > 1
+					// TODO get rid of other torrent which isn't the new
+					// contentName if getNoT > 1
 					if (!libTorrent().HasMetaData(savePath.getAbsolutePath(),
 							mLocation)) {
 						waitForMetaData(savePath);
@@ -2075,15 +2177,34 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 			Log.d("TRIBLER_DEBUG", "metaDataDone load");
 
 			if (initCompleted) {
-				mLibVLC.setMediaList();
-				mLibVLC.getMediaList().clear();
-				mLibVLC.getMediaList().add(mLocation, false);
-				Log.d("CHECK", "mediaplayerlistsize: "
-						+ mLibVLC.getMediaList().size());
-				setMediaPostLoad(fromStart, itemTitle, intentPosition);
-				mLibVLC.playIndex(0);
-			} else {
+				 /* Start / resume playback */
+		        if(dontParse && itemPosition >= 0) {
+		            // Provided externally from AudioService
+		            Log.d(TAG, "Continuing playback from AudioService at index " + itemPosition);
+		            savedIndexPosition = itemPosition;
+		            if(!mLibVLC.isPlaying()) {
+		                // AudioService-transitioned playback for item after sleep and resume
+		                mLibVLC.playIndex(savedIndexPosition);
+		                dontParse = false;
+		            }
+		        } else if (savedIndexPosition > -1) {
+		            mLibVLC.setMediaList();
+		            mLibVLC.playIndex(savedIndexPosition);
+		        } else if (mLocation != null && mLocation.length() > 0 && !dontParse) {
+		            mLibVLC.setMediaList();
+		            mLibVLC.getMediaList().add(new Media(mLibVLC, mLocation));
+
+					Log.d("CHECK", "mediaplayerlistsize: "
+							+ mLibVLC.getMediaList().size());
+					
+		            savedIndexPosition = mLibVLC.getMediaList().size() - 1;
+		            mLibVLC.playIndex(savedIndexPosition);
+		        }
+		        mCanSeek = false;
 				
+				setMediaPostLoad(fromStart, itemTitle, intentPosition);
+			} else {
+
 				Log.v("TRIBLER_DEBUG", "progress size = "
 						+ libTorrent().GetTorrentProgressSize(contentName));
 				initAsyncTask = new InitAsyncTask();
@@ -2092,323 +2213,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 		}
 	}
 	
-	private class SeekTask extends AsyncTask<Void, Integer, Void> {
-		boolean running = true;
-		TextView progressPercentageText = (TextView) findViewById(R.id.libtorrent_progress_percentage);
-		TextView loadingInfo = (TextView) findViewById(R.id.libtorrent_progress_text);
-		int setDownloadProgress;
-		int startNewDownloadHere;
-		
-		public SeekTask (int progress, int startNewDownloadHere) {
-			setDownloadProgress = progress;
-			this.startNewDownloadHere = startNewDownloadHere;
-		}
-		
-		@Override
-		protected void onCancelled() {
-			asyncTaskRunning.remove("setDownloadPrioritySeekTo()");
-			running = false;
-		}
-
-		@Override
-		protected void onPreExecute() {
-			asyncTaskRunning.add("setDownloadPrioritySeekTo()");
-			Log.d("SEEK TO", "PreExecute of seek..."
-					+ getPiecePrioritiesString(piecePriorities));
-
-			if (mLibVLC.isPlaying()) {
-				mLibVLC.pause();
-			}
-			progressPercentageText.setText(0 + "%");
-
-			loadingInfo.setText("Seeking...");
-
-			findViewById(R.id.libtorrent_loading).setVisibility(
-					View.VISIBLE);
-		}
-
-		@Override
-		protected void onProgressUpdate(Integer... progress) {
-			int progressPercentage = progress[0];
-			progressPercentageText.setText(progressPercentage + "%");
-		}
-
-		@Override
-		protected Void doInBackground(Void... params) {
-			Thread.currentThread().setName("AsyncTask seekTo");
-			// if the torrent is in seeding state, it is already done,
-			// so we can skip the following parts and go to the
-			// postExecute
-			if (libTorrent().GetTorrentState(contentName) == TorrentState.SEEDING
-					.ordinal()) {
-				return null;
-			}
-			long pieceSize = libTorrent().GetPieceSize(contentName, 0);
-			int rightIndex = startNewDownloadHere
-					+ ((int) ((CHECKSIZE * 1.5) / pieceSize));
-			int piecesToCheck = (int) ((CHECKSIZE * 1.5) / pieceSize);
-			long newCheckSize = CHECKSIZE;
-			int progressPercentage;
-
-			if (rightIndex > lastPieceIndex) {
-				rightIndex = lastPieceIndex;
-				// the minus one is because the last piece is often
-				// smaller than standard, this way it won't hang on it
-				// too much.
-				piecesToCheck = rightIndex - startNewDownloadHere - 1;
-				newCheckSize = piecesToCheck * pieceSize;
-			}
-
-			while (running) {
-				Log.d("SEEK TO", "running in Async, newCheckSize: "
-						+ newCheckSize + " piecesToCheck: "
-						+ piecesToCheck + " startPiece: "
-						+ startNewDownloadHere);
-				long sum = 0;
-
-				for (int i = startNewDownloadHere; i <= rightIndex; i++) {
-					if (libTorrent().HavePiece(contentName, i)) {
-						// Log.d("SEEK TO", "have piece " + i);
-						sum += pieceSize;
-					}
-					if (sum >= newCheckSize) {
-						// wait a bit longer
-						try {
-							Thread.sleep(1000);
-						} catch (InterruptedException e) {
-							e.printStackTrace();
-						}
-						return null;
-					}
-				}
-				progressPercentage = (int) (((double) sum / (double) newCheckSize) * 100);
-				publishProgress(progressPercentage);
-				Log.d("SEEK TO", "sum: " + sum);
-				try {
-					Thread.sleep(500);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-			}
-			return null;
-		}
-
-		@Override
-		protected void onPostExecute(Void result) {
-			if(running) {
-				Log.d("SEEK TO", "postExecute seek..."
-						+ getPiecePrioritiesString(piecePriorities));
-
-				findViewById(R.id.libtorrent_loading).setVisibility(
-						View.GONE);
-				seekBufferCompleted = true;
-				mEndReached = false;
-				Log.d("SEEK TO", "setting time and overlay to: "
-						+ setDownloadProgress);
-				mLibVLC.setTime(setDownloadProgress);
-				Log.d("SEEK TO", "setting text and showing overlay");
-				showInfo(Util.millisToString(setDownloadProgress));
-				hideInfo();
-				Log.d("SEEK TO", "starting to play");
-				play();
-			}
-			asyncTaskRunning.remove("setDownloadPrioritySeekTo()");
-		}
-
-	}
-	
-	private class WaitForMetaDataTask extends AsyncTask<Void, String, Void> {
-		boolean running = true;
-		int counter = 0;
-		String savePathString;
-		TextView loadingInfo = (TextView) findViewById(R.id.libtorrent_progress_text);
-		int waitTime = 15000; // in ms
-		
-		public WaitForMetaDataTask(String savePath) {
-			savePathString = savePath;
-		}
-		
-		@Override
-		protected void onCancelled() {
-			asyncTaskRunning.remove("waitForMetaData()");
-			running = false;
-		}
-
-		@Override
-		protected void onPreExecute() {
-			asyncTaskRunning.add("waitForMetaData()");
-			loadingInfo.setText("Locating Video...");
-		}
-
-		@Override
-		protected Void doInBackground(Void... params) {
-			while (running) {
-				if (libTorrent().HasMetaData(savePathString, mLocation)) {
-					return null;
-				} else if (counter > waitTime) {
-					Log.e("TIMEOUT",
-							"waiting too long for metaData, check link and internet connection and try again");
-					counter = -1;
-					return null;
-				} else {
-					Log.d(TAG, "waiting for metaData: " + mLocation);
-					try {
-						Thread.sleep(100);
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-				}
-				counter += 100;
-			}
-			return null;
-		}
-
-		@Override
-		protected void onPostExecute(Void result) {
-			if(running) {
-				if (counter == -1) {
-					showError("waiting too long for metaData, check link and internet connection and try again");
-				} else {
-					Log.d("metaDataWait", "MetaData done");
-					inMetaDataWait = false;
-					metaDataDone = true;
-					onTriblerResume();
-				}
-			}
-			asyncTaskRunning.remove("waitForMetaData()");
-				
-		}
-	}
-	private class InitAsyncTask extends AsyncTask<Void, Integer, Void> {
-		boolean running = true;
-		TextView progressPercentageText = (TextView) findViewById(R.id.libtorrent_progress_percentage);
-		TextView loadingInfo = (TextView) findViewById(R.id.libtorrent_progress_text);
-
-		@Override
-		protected void onCancelled() {
-			running = false;
-			asyncTaskRunning.remove("load()");
-			findViewById(R.id.libtorrent_loading).setVisibility(
-					View.GONE);
-		}
-
-		@Override
-		protected void onPreExecute() {
-			asyncTaskRunning.add("load()");
-			loadingInfo.setText("Loading Video...");
-		}
-
-		@Override
-		protected void onProgressUpdate(Integer... progress) {
-			int progressPercentage = progress[0];
-			progressPercentageText
-					.setText(progressPercentage + "%");
-		}
-
-		@Override
-		protected Void doInBackground(Void... params) {
-			int progressSize = 0;
-			int progressPercentage = 0;
-			boolean startedOnce = false;
-			int progressPercentageOld = -1;
-
-			while (running) {
-				progressSize = (int) libTorrent()
-						.GetTorrentProgressSize(contentName);
-
-				// for loading screen:
-				progressPercentage = (int) (((double) progressSize / (double) CHECKSIZEMB) * 100);
-
-				if (progressPercentage > progressPercentageOld) {
-					progressPercentageOld = progressPercentage;
-
-					// for debug:
-					Log.d(TAG,
-							"ICCT: progress:"
-									+ progressPercentage
-									+ "%, have first: "
-									+ libTorrent().HavePiece(
-											contentName,
-											firstPieceIndex)
-									+ ", have last: "
-									+ libTorrent().HavePiece(
-											contentName,
-											lastPieceIndex));
-					publishProgress(progressPercentage);
-				}
-				if(isCancelled()) {
-					return null;
-				}
-				try {
-					Thread.sleep(100);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-
-				if (firstPieceIndex != -1 && lastPieceIndex != -1) {
-					if (!startedOnce) {
-						if (progressSize >= CHECKSIZEMB) {
-							mLibVLC.play();
-							mLibVLC.stop();
-							Log.d(TAG, "lets play");
-							Log.d(TAG,
-									"ICCT, length: "
-											+ mLibVLC.getLength()
-											+ ", have first: "
-											+ libTorrent()
-													.HavePiece(
-															contentName,
-															firstPieceIndex)
-											+ ", have last: "
-											+ libTorrent()
-													.HavePiece(
-															contentName,
-															lastPieceIndex));
-							mEndReached = false;
-							startedOnce = true;
-							return null;
-						}
-					}
-				}
-			}
-			return null;
-		}
-
-		@Override
-		protected void onPostExecute(Void result) {
-			Log.v(TAG, "onPostExecute");
-			if(running) {
-				findViewById(R.id.libtorrent_loading).setVisibility(
-						View.GONE);
-
-				for (int i = 0; i < piecePriorities.length; i++) {
-					piecePriorities[i] = FilePriority.NORMAL.ordinal();
-				}
-				String prios = "firstPiece: " + firstPieceIndex + "\n";
-				for (int i : piecePriorities) {
-					prios += "" + i;
-				}
-				Log.v(TAG, "PRIOSAFTER: " + prios + "\nLastpieceIndex "
-						+ lastPieceIndex);
-				libTorrent().SetPiecePriorities(contentName,
-						piecePriorities);
-				initCompleted = true;
-				seekBufferCompleted = true;
-
-				startPlayingAfterInit();
-			}
-			asyncTaskRunning.remove("load()");
-		}
-	}
-	
-	private void startPlayingAfterInit() {
-		mLibVLC.stop();
-		// onPause();
-		// onStop();
-		onStart();
-		onResume();
-	}
-
+	//TRIBLER pulled from load
 	@SuppressWarnings("unchecked")
 	private void setMediaPostLoad(boolean fromStart, String itemTitle,
 			long intentPosition) {
@@ -2417,7 +2222,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 		// restore last position
 		SharedPreferences preferences = getSharedPreferences(
 				PreferencesActivity.NAME, MODE_PRIVATE);
-		Media media = MediaDatabase.getInstance(this).getMedia(this, mLocation);
+		Media media = MediaDatabase.getInstance(this).getMedia(mLocation);
 		if (media != null) {
 			// in media library
 			if (media.getTime() > 0 && !fromStart) {
@@ -2482,72 +2287,315 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 		}
 		mTitle.setText(title);
 	}
+	private class SeekTask extends AsyncTask<Void, Integer, Void> {
+		boolean running = true;
+		TextView progressPercentageText = (TextView) findViewById(R.id.libtorrent_progress_percentage);
+		TextView loadingInfo = (TextView) findViewById(R.id.libtorrent_progress_text);
+		int setDownloadProgress;
+		int startNewDownloadHere;
 
-	private void setPiecePriorites() {
-		piecePriorities = libTorrent().GetPiecePriorities(contentName);
-		firstPieceIndex = -1;
-		lastPieceIndex = -1;
-		long firstPieceSize = libTorrent().GetPieceSize(contentName, 0);
+		public SeekTask(int progress, int startNewDownloadHere) {
+			setDownloadProgress = progress;
+			this.startNewDownloadHere = startNewDownloadHere;
+		}
 
-		int firstNumberOfPieces = 0;
-		// minimal 18 pieces or 20MB
-		firstNumberOfPieces = Math
-				.max(18, (int) (REQUESTSIZE / firstPieceSize));
-		Log.d(TAG, "firstPieceSize " + firstPieceSize);
-		Log.d(TAG, "firstNumberOfPieces " + firstNumberOfPieces);
+		@Override
+		protected void onCancelled() {
+			asyncTaskRunning.remove("setDownloadPrioritySeekTo()");
+			running = false;
+		}
 
-		Log.v(TAG, "PRIOSBEFORE: " + getPiecePrioritiesString(piecePriorities));
-		for (int i = 0; i < piecePriorities.length; i++) {
-			if (piecePriorities[i] != 0) {
-				// We're in the file to download
-				if (firstPieceIndex == -1)
-					// Found the first piece
-					firstPieceIndex = i;
-				if (!initCompleted) {
-					// only dl the first few pieces if the initial
-					// stage isn't completed yet
-					if (i < firstPieceIndex + firstNumberOfPieces) {
-						piecePriorities[i] = FilePriority.NORMAL.ordinal();
-					} else {
-						piecePriorities[i] = FilePriority.DONTDOWNLOAD
-								.ordinal();
-					}
-				} else {
-					piecePriorities[i] = FilePriority.NORMAL.ordinal();
-				}
-			} else {
-				// We're either before or after the file to download
-				if (firstPieceIndex != -1)
-					// After firstPiece
-					if (lastPieceIndex == -1)
-						lastPieceIndex = i - 1;
-				piecePriorities[i] = FilePriority.DONTDOWNLOAD.ordinal();
+		@Override
+		protected void onPreExecute() {
+			asyncTaskRunning.add("setDownloadPrioritySeekTo()");
+			Log.d("SEEK TO", "PreExecute of seek..."
+					+ getPiecePrioritiesString(piecePriorities));
+
+			if (mLibVLC.isPlaying()) {
+				mLibVLC.pause();
 			}
-		}
-		if (lastPieceIndex == -1)
-			lastPieceIndex = piecePriorities.length - 1;
-		if (!initCompleted
-				&& (!libTorrent().HavePiece(contentName, lastPieceIndex) && !libTorrent()
-						.HavePiece(contentName, (lastPieceIndex - 1)))) {
-			if (lastPieceIndex > -1)
-				piecePriorities[lastPieceIndex] = FilePriority.MAXPRIORITY
-						.ordinal();
-			if (lastPieceIndex - 1 > -1)
-				piecePriorities[lastPieceIndex - 1] = FilePriority.MAXPRIORITY
-						.ordinal();
+			progressPercentageText.setText(0 + "%");
+
+			loadingInfo.setText("Seeking...");
+
+			findViewById(R.id.libtorrent_loading).setVisibility(View.VISIBLE);
 		}
 
-		Log.d(TAG, "LastPiece Index: " + lastPieceIndex + " / "
-				+ (piecePriorities.length - 1));
+		@Override
+		protected void onProgressUpdate(Integer... progress) {
+			int progressPercentage = progress[0];
+			progressPercentageText.setText(progressPercentage + "%");
+		}
 
-		String prios = "firstPiece: " + firstPieceIndex + "\n";
-		prios += getPiecePrioritiesString(piecePriorities);
-		Log.v(TAG, "PRIOSAFTER: " + prios + "\nLastpieceIndex "
-				+ lastPieceIndex);
+		@Override
+		protected Void doInBackground(Void... params) {
+			Thread.currentThread().setName("AsyncTask seekTo");
+			// if the torrent is in seeding state, it is already done,
+			// so we can skip the following parts and go to the
+			// postExecute
+			if (libTorrent().GetTorrentState(contentName) == TorrentState.SEEDING
+					.ordinal()) {
+				return null;
+			}
+			long pieceSize = libTorrent().GetPieceSize(contentName, 0);
+			int rightIndex = startNewDownloadHere
+					+ ((int) ((CHECKSIZE * 1.5) / pieceSize));
+			int piecesToCheck = (int) ((CHECKSIZE * 1.5) / pieceSize);
+			long newCheckSize = CHECKSIZE;
+			int progressPercentage;
 
-		libTorrent().SetPiecePriorities(contentName, piecePriorities);
+			if (rightIndex > lastPieceIndex) {
+				rightIndex = lastPieceIndex;
+				// the minus one is because the last piece is often
+				// smaller than standard, this way it won't hang on it
+				// too much.
+				piecesToCheck = rightIndex - startNewDownloadHere - 1;
+				newCheckSize = piecesToCheck * pieceSize;
+			}
+
+			while (running) {
+				Log.d("SEEK TO", "running in Async, newCheckSize: "
+						+ newCheckSize + " piecesToCheck: " + piecesToCheck
+						+ " startPiece: " + startNewDownloadHere);
+				long sum = 0;
+
+				for (int i = startNewDownloadHere; i <= rightIndex; i++) {
+					if (libTorrent().HavePiece(contentName, i)) {
+						// Log.d("SEEK TO", "have piece " + i);
+						sum += pieceSize;
+					}
+					if (sum >= newCheckSize) {
+						// wait a bit longer
+						try {
+							Thread.sleep(1000);
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+						return null;
+					}
+				}
+				progressPercentage = (int) (((double) sum / (double) newCheckSize) * 100);
+				publishProgress(progressPercentage);
+				Log.d("SEEK TO", "sum: " + sum);
+				try {
+					Thread.sleep(500);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+			return null;
+		}
+
+		@Override
+		protected void onPostExecute(Void result) {
+			if (running) {
+				Log.d("SEEK TO", "postExecute seek..."
+						+ getPiecePrioritiesString(piecePriorities));
+
+				findViewById(R.id.libtorrent_loading).setVisibility(View.GONE);
+				seekBufferCompleted = true;
+				mEndReached = false;
+				Log.d("SEEK TO", "setting time and overlay to: "
+						+ setDownloadProgress);
+				mLibVLC.setTime(setDownloadProgress);
+				Log.d("SEEK TO", "setting text and showing overlay");
+				showInfo(Util.millisToString(setDownloadProgress));
+				hideInfo();
+				Log.d("SEEK TO", "starting to play");
+				play();
+			}
+			asyncTaskRunning.remove("setDownloadPrioritySeekTo()");
+		}
+
 	}
 
+	private class WaitForMetaDataTask extends AsyncTask<Void, String, Void> {
+		boolean running = true;
+		int counter = 0;
+		String savePathString;
+		TextView loadingInfo = (TextView) findViewById(R.id.libtorrent_progress_text);
+		int waitTime = 15000; // in ms
+
+		public WaitForMetaDataTask(String savePath) {
+			savePathString = savePath;
+		}
+
+		@Override
+		protected void onCancelled() {
+			asyncTaskRunning.remove("waitForMetaData()");
+			running = false;
+		}
+
+		@Override
+		protected void onPreExecute() {
+			asyncTaskRunning.add("waitForMetaData()");
+			loadingInfo.setText("Locating Video...");
+		}
+
+		@Override
+		protected Void doInBackground(Void... params) {
+			while (running) {
+				if (libTorrent().HasMetaData(savePathString, mLocation)) {
+					return null;
+				} else if (counter > waitTime) {
+					Log.e("TIMEOUT",
+							"waiting too long for metaData, check link and internet connection and try again");
+					counter = -1;
+					return null;
+				} else {
+					Log.d(TAG, "waiting for metaData: " + mLocation);
+					try {
+						Thread.sleep(100);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
+				counter += 100;
+			}
+			return null;
+		}
+
+		@Override
+		protected void onPostExecute(Void result) {
+			if (running) {
+				if (counter == -1) {
+					showError("waiting too long for metaData, check link and internet connection and try again");
+				} else {
+					Log.d("metaDataWait", "MetaData done");
+					inMetaDataWait = false;
+					metaDataDone = true;
+					onTriblerResume();
+				}
+			}
+			asyncTaskRunning.remove("waitForMetaData()");
+
+		}
+	}
+
+	private class InitAsyncTask extends AsyncTask<Void, Integer, Void> {
+		boolean running = true;
+		TextView progressPercentageText = (TextView) findViewById(R.id.libtorrent_progress_percentage);
+		TextView loadingInfo = (TextView) findViewById(R.id.libtorrent_progress_text);
+
+		@Override
+		protected void onCancelled() {
+			running = false;
+			asyncTaskRunning.remove("load()");
+			findViewById(R.id.libtorrent_loading).setVisibility(View.GONE);
+		}
+
+		@Override
+		protected void onPreExecute() {
+			asyncTaskRunning.add("load()");
+			loadingInfo.setText("Loading Video...");
+		}
+
+		@Override
+		protected void onProgressUpdate(Integer... progress) {
+			int progressPercentage = progress[0];
+			progressPercentageText.setText(progressPercentage + "%");
+		}
+
+		@Override
+		protected Void doInBackground(Void... params) {
+			int progressSize = 0;
+			int progressPercentage = 0;
+			boolean startedOnce = false;
+			int progressPercentageOld = -1;
+
+			while (running) {
+				progressSize = (int) libTorrent().GetTorrentProgressSize(
+						contentName);
+
+				// for loading screen:
+				progressPercentage = (int) (((double) progressSize / (double) CHECKSIZEMB) * 100);
+
+				if (progressPercentage > progressPercentageOld) {
+					progressPercentageOld = progressPercentage;
+
+					// for debug:
+					Log.d(TAG,
+							"ICCT: progress:"
+									+ progressPercentage
+									+ "%, have first: "
+									+ libTorrent().HavePiece(contentName,
+											firstPieceIndex)
+									+ ", have last: "
+									+ libTorrent().HavePiece(contentName,
+											lastPieceIndex));
+					publishProgress(progressPercentage);
+				}
+				if (isCancelled()) {
+					return null;
+				}
+				try {
+					Thread.sleep(100);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+
+				if (firstPieceIndex != -1 && lastPieceIndex != -1) {
+					if (!startedOnce) {
+						if (progressSize >= CHECKSIZEMB) {
+							mLibVLC.play();
+							mLibVLC.stop();
+							Log.d(TAG, "lets play");
+							Log.d(TAG,
+									"ICCT, length: "
+											+ mLibVLC.getLength()
+											+ ", have first: "
+											+ libTorrent().HavePiece(
+													contentName,
+													firstPieceIndex)
+											+ ", have last: "
+											+ libTorrent()
+													.HavePiece(contentName,
+															lastPieceIndex));
+							mEndReached = false;
+							startedOnce = true;
+							return null;
+						}
+					}
+				}
+			}
+			return null;
+		}
+
+		@Override
+		protected void onPostExecute(Void result) {
+			Log.v(TAG, "onPostExecute");
+			if (running) {
+				findViewById(R.id.libtorrent_loading).setVisibility(View.GONE);
+
+				for (int i = 0; i < piecePriorities.length; i++) {
+					piecePriorities[i] = FilePriority.NORMAL.ordinal();
+				}
+				String prios = "firstPiece: " + firstPieceIndex + "\n";
+				for (int i : piecePriorities) {
+					prios += "" + i;
+				}
+				Log.v(TAG, "PRIOSAFTER: " + prios + "\nLastpieceIndex "
+						+ lastPieceIndex);
+				libTorrent().SetPiecePriorities(contentName, piecePriorities);
+				initCompleted = true;
+				seekBufferCompleted = true;
+
+				startPlayingAfterInit();
+			}
+			asyncTaskRunning.remove("load()");
+		}
+	}
+
+	//TRIBLER
+	private void startPlayingAfterInit() {
+		mLibVLC.stop();
+		// onPause();
+		// onStop();
+		onStart();
+		onResume();
+	}
+	
+	//TRIBLER
 	private long getSize(String sizeString) {
 		sizeString = sizeString.toLowerCase(Locale.ENGLISH);
 		Log.v(TAG, "getSize(" + sizeString + ")");
@@ -2575,7 +2623,6 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 
 		return res;
 	}
-
 	@SuppressWarnings("deprecation")
 	private int getScreenRotation() {
 		WindowManager wm = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
@@ -2650,7 +2697,71 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 			}
 		}
 	}
+	private void setPiecePriorites() {
+		piecePriorities = libTorrent().GetPiecePriorities(contentName);
+		firstPieceIndex = -1;
+		lastPieceIndex = -1;
+		long firstPieceSize = libTorrent().GetPieceSize(contentName, 0);
 
+		int firstNumberOfPieces = 0;
+		// minimal 18 pieces or 20MB
+		firstNumberOfPieces = Math
+				.max(18, (int) (REQUESTSIZE / firstPieceSize));
+		Log.d(TAG, "firstPieceSize " + firstPieceSize);
+		Log.d(TAG, "firstNumberOfPieces " + firstNumberOfPieces);
+
+		Log.v(TAG, "PRIOSBEFORE: " + getPiecePrioritiesString(piecePriorities));
+		for (int i = 0; i < piecePriorities.length; i++) {
+			if (piecePriorities[i] != 0) {
+				// We're in the file to download
+				if (firstPieceIndex == -1)
+					// Found the first piece
+					firstPieceIndex = i;
+				if (!initCompleted) {
+					// only dl the first few pieces if the initial
+					// stage isn't completed yet
+					if (i < firstPieceIndex + firstNumberOfPieces) {
+						piecePriorities[i] = FilePriority.NORMAL.ordinal();
+					} else {
+						piecePriorities[i] = FilePriority.DONTDOWNLOAD
+								.ordinal();
+					}
+				} else {
+					piecePriorities[i] = FilePriority.NORMAL.ordinal();
+				}
+			} else {
+				// We're either before or after the file to download
+				if (firstPieceIndex != -1)
+					// After firstPiece
+					if (lastPieceIndex == -1)
+						lastPieceIndex = i - 1;
+				piecePriorities[i] = FilePriority.DONTDOWNLOAD.ordinal();
+			}
+		}
+		if (lastPieceIndex == -1)
+			lastPieceIndex = piecePriorities.length - 1;
+		if (!initCompleted
+				&& (!libTorrent().HavePiece(contentName, lastPieceIndex) && !libTorrent()
+						.HavePiece(contentName, (lastPieceIndex - 1)))) {
+			if (lastPieceIndex > -1)
+				piecePriorities[lastPieceIndex] = FilePriority.MAXPRIORITY
+						.ordinal();
+			if (lastPieceIndex - 1 > -1)
+				piecePriorities[lastPieceIndex - 1] = FilePriority.MAXPRIORITY
+						.ordinal();
+		}
+
+		Log.d(TAG, "LastPiece Index: " + lastPieceIndex + " / "
+				+ (piecePriorities.length - 1));
+
+		String prios = "firstPiece: " + firstPieceIndex + "\n";
+		prios += getPiecePrioritiesString(piecePriorities);
+		Log.v(TAG, "PRIOSAFTER: " + prios + "\nLastpieceIndex "
+				+ lastPieceIndex);
+
+		libTorrent().SetPiecePriorities(contentName, piecePriorities);
+	}
+	
 	public void showAdvancedOptions(View v) {
 		CommonDialogs.advancedOptions(this, v, MenuType.Video);
 	}

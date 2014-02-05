@@ -27,7 +27,7 @@ import java.util.Arrays;
 import java.util.Locale;
 import java.util.Stack;
 
-import org.videolan.vlc.Media;
+import org.videolan.libvlc.Media;
 import org.videolan.vlc.MediaDatabase;
 import org.videolan.vlc.Util;
 

@@ -36,7 +36,15 @@
 
 #include "libvlcjni.h"
 #include "aout.h"
+#include "vout.h"
 #include "utils.h"
+
+#define VOUT_ANDROID_SURFACE 0
+#define VOUT_OPENGLES2       1
+
+#define HW_ACCELERATION_DISABLED 0
+#define HW_ACCELERATION_DECODING 1
+#define HW_ACCELERATION_FULL     2
 
 #define LOG_TAG "VLC/JNI/main"
 #include "log.h"
@@ -53,8 +61,9 @@ libvlc_media_t *new_media(jlong instance, JNIEnv *env, jobject thiz, jstring fil
 
     if (!noOmx) {
         jclass cls = (*env)->GetObjectClass(env, thiz);
-        jmethodID methodId = (*env)->GetMethodID(env, cls, "useIOMX", "()Z");
-        if ((*env)->CallBooleanMethod(env, thiz, methodId)) {
+        jmethodID methodId = (*env)->GetMethodID(env, cls, "getHardwareAcceleration", "()I");
+        int hardwareAcceleration = (*env)->CallIntMethod(env, thiz, methodId);
+        if (hardwareAcceleration == HW_ACCELERATION_DECODING || hardwareAcceleration == HW_ACCELERATION_FULL) {
             /*
              * Set higher caching values if using iomx decoding, since some omx
              * decoders have a very high latency, and if the preroll data isn't
@@ -72,15 +81,6 @@ libvlc_media_t *new_media(jlong instance, JNIEnv *env, jobject thiz, jstring fil
             libvlc_media_add_option(p_md, ":no-video");
     }
     return p_md;
-}
-
-// Get the current media list being followed
-libvlc_media_list_t* getMediaList(JNIEnv *env, jobject thiz) {
-    jclass clazz = (*env)->GetObjectClass(env, thiz);
-    jfieldID fieldMP = (*env)->GetFieldID(env, clazz,
-                                          "mMediaList", "Lorg/videolan/libvlc/MediaList;");
-    jobject javaML = (*env)->GetObjectField(env, thiz, fieldMP);
-    return getMediaListFromJava(env, javaML);
 }
 
 libvlc_media_player_t *getMediaPlayer(JNIEnv *env, jobject thiz)
@@ -106,9 +106,6 @@ static void releaseMediaPlayer(JNIEnv *env, jobject thiz)
 JavaVM *myVm;
 
 static jobject eventHandlerInstance = NULL;
-
-/** vout lock declared in vout.c */
-extern pthread_mutex_t vout_android_lock;
 
 static void vlc_event_callback(const libvlc_event_t *ev, void *data)
 {
@@ -199,6 +196,7 @@ jint JNI_OnLoad(JavaVM *vm, void *reserved)
     myVm = vm;
 
     pthread_mutex_init(&vout_android_lock, NULL);
+    pthread_cond_init(&vout_android_surf_attached, NULL);
 
     LOGD("JNI interface loaded.");
     return JNI_VERSION_1_2;
@@ -206,6 +204,7 @@ jint JNI_OnLoad(JavaVM *vm, void *reserved)
 
 void JNI_OnUnload(JavaVM* vm, void* reserved) {
     pthread_mutex_destroy(&vout_android_lock);
+    pthread_cond_destroy(&vout_android_surf_attached);
 }
 
 // FIXME: use atomics
@@ -218,6 +217,9 @@ void Java_org_videolan_libvlc_LibVLC_nativeInit(JNIEnv *env, jobject thiz)
     jmethodID methodId = (*env)->GetMethodID(env, cls, "getAout", "()I");
     bool use_opensles = (*env)->CallIntMethod(env, thiz, methodId) == AOUT_OPENSLES;
 
+    methodId = (*env)->GetMethodID(env, cls, "getVout", "()I");
+    bool use_opengles2 = (*env)->CallIntMethod(env, thiz, methodId) == VOUT_OPENGLES2;
+
     methodId = (*env)->GetMethodID(env, cls, "timeStretchingEnabled", "()Z");
     bool enable_time_stretch = (*env)->CallBooleanMethod(env, thiz, methodId);
 
@@ -226,15 +228,15 @@ void Java_org_videolan_libvlc_LibVLC_nativeInit(JNIEnv *env, jobject thiz)
 
     methodId = (*env)->GetMethodID(env, cls, "getDeblocking", "()I");
     int deblocking = (*env)->CallIntMethod(env, thiz, methodId);
-    char deblockstr[2] = "3";
-    snprintf(deblockstr, 2, "%d", deblocking);
+    char deblockstr[2];
+    snprintf(deblockstr, sizeof(deblockstr), "%d", deblocking);
     LOGD("Using deblocking level %d", deblocking);
 
     methodId = (*env)->GetMethodID(env, cls, "getNetworkCaching", "()I");
     int networkCaching = (*env)->CallIntMethod(env, thiz, methodId);
-    char networkCachingstr[25] = "0";
+    char networkCachingstr[25];
     if(networkCaching > 0) {
-        snprintf(networkCachingstr, 25, "--network-caching=%d", networkCaching);
+        snprintf(networkCachingstr, sizeof(networkCachingstr), "--network-caching=%d", networkCaching);
         LOGD("Using network caching of %d ms", networkCaching);
     }
 
@@ -251,28 +253,37 @@ void Java_org_videolan_libvlc_LibVLC_nativeInit(JNIEnv *env, jobject thiz)
     methodId = (*env)->GetMethodID(env, cls, "isVerboseMode", "()Z");
     verbosity = (*env)->CallBooleanMethod(env, thiz, methodId);
 
+    methodId = (*env)->GetMethodID(env, cls, "getHardwareAcceleration", "()I");
+    int hardwareAcceleration = (*env)->CallIntMethod(env, thiz, methodId);
+    /* With the MediaCodec opaque mode we cannot use the OpenGL ES vout. */
+    if (hardwareAcceleration == HW_ACCELERATION_FULL)
+        use_opengles2 = false;
+
     /* Don't add any invalid options, otherwise it causes LibVLC to crash */
     const char *argv[] = {
-        "-I", "dummy",
-        "--no-osd",
-        "--no-video-title-show",
-        "--no-stats",
-        "--no-plugins-cache",
-        "--no-drop-late-frames",
-        /* The VLC default is to pick the highest resolution possible
-         * (i.e. 1080p). For mobile, pick a more sane default for slow
-         * mobile data networks and slower hardware. */
-        "--preferred-resolution", "360",
-        "--avcodec-fast",
-        "--avcodec-threads=0",
-        "--subsdec-encoding", subsencodingstr,
+        /* CPU intensive plugin, setting for slow devices */
         enable_time_stretch ? "--audio-time-stretch" : "--no-audio-time-stretch",
+
+        /* avcodec speed settings for slow devices */
+        "--avcodec-fast", // non-spec-compliant speedup tricks
         "--avcodec-skiploopfilter", deblockstr,
-        "--avcodec-skip-frame", enable_frame_skip ? "4" : "0",
-        "--avcodec-skip-idct", enable_frame_skip ? "4" : "0",
+        "--avcodec-skip-frame", enable_frame_skip ? "2" : "0",
+        "--avcodec-skip-idct", enable_frame_skip ? "2" : "0",
+
+        /* Remove me when UTF-8 is enforced by law */
+        "--subsdec-encoding", subsencodingstr,
+
+        /* XXX: why can't the default be fine ? #7792 */
         (networkCaching > 0) ? networkCachingstr : "",
+
+        /* Android audio API is a mess */
         use_opensles ? "--aout=opensles" : "--aout=android_audiotrack",
+
+        /* Android video API is a mess */
+        use_opengles2 ? "--vout=gles2" : "--vout=androidsurface",
         "--androidsurface-chroma", chromastr != NULL && chromastr[0] != 0 ? chromastr : "RV32",
+        /* XXX: we can't recover from direct rendering failure */
+        (hardwareAcceleration == HW_ACCELERATION_FULL) ? "" : "--no-mediacodec-dr",
     };
     libvlc_instance_t *instance = libvlc_new(sizeof(argv) / sizeof(*argv), argv);
 
@@ -324,15 +335,15 @@ void Java_org_videolan_libvlc_LibVLC_setEventHandler(JNIEnv *env, jobject thiz, 
     eventHandlerInstance = getEventHandlerReference(env, thiz, eventHandler);
 }
 
-static void create_player_and_play(JNIEnv* env, jobject thiz,
-                                   jlong instance, int position) {
+void Java_org_videolan_libvlc_LibVLC_playMRL(JNIEnv *env, jobject thiz, jlong instance,
+                                             jstring mrl, jobjectArray mediaOptions)
+{
     /* Release previous media player, if any */
     releaseMediaPlayer(env, thiz);
 
-    libvlc_media_list_t* p_mlist = getMediaList(env, thiz);
-
     /* Create a media player playing environment */
     libvlc_media_player_t *mp = libvlc_media_player_new((libvlc_instance_t*)(intptr_t)instance);
+    libvlc_media_player_set_video_title_display(mp, libvlc_position_disable, 0);
     jobject myJavaLibVLC = (*env)->NewGlobalRef(env, thiz);
 
     //if AOUT_AUDIOTRACK_JAVA, we use amem
@@ -367,66 +378,26 @@ static void create_player_and_play(JNIEnv* env, jobject thiz,
     jmethodID methodID = (*env)->GetMethodID(env, cls, "applyEqualizer", "()V");
     (*env)->CallVoidMethod(env, thiz, methodID);
 
-    setInt(env, thiz, "mInternalMediaPlayerIndex", (jint)position);
-    libvlc_media_list_lock(p_mlist);
-    libvlc_media_t* p_md = libvlc_media_list_item_at_index(p_mlist, position);
-    libvlc_media_list_unlock(p_mlist);
+    const char* p_mrl = (*env)->GetStringUTFChars(env, mrl, 0);
+
+    libvlc_media_t* p_md = libvlc_media_new_location((libvlc_instance_t*)(intptr_t)instance, p_mrl);
+    /* media options */
+    if (mediaOptions != NULL)
+    {
+        int stringCount = (*env)->GetArrayLength(env, mediaOptions);
+        for(int i = 0; i < stringCount; i++)
+        {
+            jstring option = (jstring)(*env)->GetObjectArrayElement(env, mediaOptions, i);
+            const char* p_st = (*env)->GetStringUTFChars(env, option, 0);
+            libvlc_media_add_option(p_md, p_st); // option
+            (*env)->ReleaseStringUTFChars(env, option, p_st);
+        }
+    }
+
+    (*env)->ReleaseStringUTFChars(env, mrl, p_mrl);
+
     libvlc_media_player_set_media(mp, p_md);
     libvlc_media_player_play(mp);
-}
-
-jint Java_org_videolan_libvlc_LibVLC_readMedia(JNIEnv *env, jobject thiz,
-                                            jlong instance, jstring mrl, jboolean novideo)
-{
-    /* Create a new item */
-    libvlc_media_t *m = new_media(instance, env, thiz, mrl, false, novideo);
-    if (!m)
-    {
-        LOGE("readMedia: Could not create the media!");
-        return -1;
-    }
-
-    libvlc_media_list_t* p_mlist = getMediaList(env, thiz);
-
-    libvlc_media_list_lock(p_mlist);
-    if(libvlc_media_list_add_media(p_mlist, m) != 0) {
-        LOGE("readMedia: Could not add to the media list!");
-        libvlc_media_list_unlock(p_mlist);
-        libvlc_media_release(m);
-        return -1;
-    }
-    int position = libvlc_media_list_index_of_item(p_mlist, m);
-    libvlc_media_list_unlock(p_mlist);
-
-    /* No need to keep the media now */
-    libvlc_media_release(m);
-
-    create_player_and_play(env, thiz, instance, position);
-
-    return position;
-}
-
-void Java_org_videolan_libvlc_LibVLC_playIndex(JNIEnv *env, jobject thiz,
-                                            jlong instance, int position) {
-    create_player_and_play(env, thiz, instance, position);
-}
-
-void Java_org_videolan_libvlc_LibVLC_getMediaListItems(
-                JNIEnv *env, jobject thiz, jobject arrayList) {
-    jclass arrayClass = (*env)->FindClass(env, "java/util/ArrayList");
-    jmethodID methodID = (*env)->GetMethodID(env, arrayClass, "add", "(Ljava/lang/Object;)Z");
-    jstring str;
-
-    libvlc_media_list_t* p_mlist = getMediaList(env, thiz);
-    libvlc_media_list_lock( p_mlist );
-    for(int i = 0; i < libvlc_media_list_count( p_mlist ); i++) {
-        char* mrl = libvlc_media_get_mrl( libvlc_media_list_item_at_index( p_mlist, i ) );
-        str = (*env)->NewStringUTF(env, mrl);
-        (*env)->CallBooleanMethod(env, arrayList, methodID, str);
-        (*env)->DeleteLocalRef(env, str);
-        free(mrl);
-    }
-    libvlc_media_list_unlock( p_mlist );
 }
 
 jfloat Java_org_videolan_libvlc_LibVLC_getRate(JNIEnv *env, jobject thiz) {
@@ -479,29 +450,6 @@ void Java_org_videolan_libvlc_LibVLC_stop(JNIEnv *env, jobject thiz)
     libvlc_media_player_t *mp = getMediaPlayer(env, thiz);
     if (mp)
         libvlc_media_player_stop(mp);
-}
-
-void Java_org_videolan_libvlc_LibVLC_previous(JNIEnv *env, jobject thiz)
-{
-    int current_position = getInt(env, thiz, "mInternalMediaPlayerIndex");
-
-    if(current_position-1 >= 0) {
-        setInt(env, thiz, "mInternalMediaPlayerIndex", (jint)(current_position-1));
-        create_player_and_play(env, thiz,
-             getLong(env, thiz, "mLibVlcInstance"), current_position-1);
-    }
-}
-
-void Java_org_videolan_libvlc_LibVLC_next(JNIEnv *env, jobject thiz)
-{
-    libvlc_media_list_t* p_mlist = getMediaList(env, thiz);
-    int current_position = getInt(env, thiz, "mInternalMediaPlayerIndex");
-
-    if(current_position+1 < libvlc_media_list_count(p_mlist)) {
-        setInt(env, thiz, "mInternalMediaPlayerIndex", (jint)(current_position+1));
-        create_player_and_play(env, thiz,
-             getLong(env, thiz, "mLibVlcInstance"), current_position+1);
-    }
 }
 
 jint Java_org_videolan_libvlc_LibVLC_getVolume(JNIEnv *env, jobject thiz)

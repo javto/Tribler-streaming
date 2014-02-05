@@ -1,5 +1,7 @@
 package com.tudelft.triblersvod.example;
 
+import com.tudelft.triblersvod.example.R;
+
 import android.os.Bundle;
 import android.preference.PreferenceFragment;
 

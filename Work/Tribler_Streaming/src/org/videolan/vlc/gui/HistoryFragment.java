@@ -22,7 +22,6 @@ package org.videolan.vlc.gui;
 
 import org.videolan.libvlc.LibVLC;
 import org.videolan.vlc.AudioServiceController;
-import org.videolan.vlc.gui.audio.AudioPlayerFragment;
 
 import android.os.Bundle;
 import android.util.Log;
@@ -58,6 +57,8 @@ public class HistoryFragment extends SherlockListFragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)
     {
+        getSherlockActivity().getSupportActionBar().setTitle(R.string.history);
+
         View v = inflater.inflate(R.layout.history_list, container, false);
         setListAdapter(mHistoryAdapter);
         final ListView listView = (ListView)v.findViewById(android.R.id.list);
@@ -81,7 +82,6 @@ public class HistoryFragment extends SherlockListFragment {
 
         LibVLC.getExistingInstance().setMediaList();
         audioController.playIndex(position);
-        AudioPlayerFragment.start(getActivity());
     }
 
     @Override
