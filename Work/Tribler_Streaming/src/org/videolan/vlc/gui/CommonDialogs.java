@@ -36,8 +36,10 @@ import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.net.Uri;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.ContextThemeWrapper;
 import android.view.Gravity;
@@ -51,128 +53,168 @@ import android.widget.Toast;
 import com.tudelft.triblersvod.example.R;
 
 public class CommonDialogs {
-    public final static String TAG = "VLC/CommonDialogs";
+	public final static String TAG = "VLC/CommonDialogs";
 
-    public static enum MenuType {
-        Video, Audio
-    };
-    public static final int INTENT_SPECIFIC = 10; // PICK_FILE intent
-    public static final int INTENT_GENERIC = 20; // generic CATEGORY_OPENABLE
+	public static enum MenuType {
+		Video, Audio
+	};
 
-    public static AlertDialog deleteMedia(final Context context,
-                                          final String addressMedia,
-                                          final VlcRunnable runnable) {
-        URI adressMediaUri = null;
-        try {
-            adressMediaUri = new URI (addressMedia);
-        } catch (URISyntaxException e) {
-            e.printStackTrace();
-        }
-        final File fileMedia = new File(adressMediaUri);
+	public static final int INTENT_SPECIFIC = 10; // PICK_FILE intent
+	public static final int INTENT_GENERIC = 20; // generic CATEGORY_OPENABLE
 
-        AlertDialog alertDialog = new AlertDialog.Builder(context)
-        .setTitle(R.string.validation)
-        .setMessage(context.getResources().getString(R.string.confirm_delete, fileMedia.getName()))
-        .setIcon(android.R.drawable.ic_dialog_alert)
-        .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int whichButton) {
-                fileMedia.delete();
-                if(runnable != null)
-                    runnable.run();
-            }
-        })
-        .setNegativeButton(android.R.string.cancel, null).create();
+	public static AlertDialog deleteMedia(final Context context,
+			final String addressMedia, final VlcRunnable runnable) {
+		URI adressMediaUri = null;
+		try {
+			adressMediaUri = new URI(addressMedia);
+		} catch (URISyntaxException e) {
+			e.printStackTrace();
+		}
+		final File fileMedia = new File(adressMediaUri);
 
-        return alertDialog;
-    }
+		AlertDialog alertDialog = new AlertDialog.Builder(context)
+				.setTitle(R.string.validation)
+				.setMessage(
+						context.getResources().getString(
+								R.string.confirm_delete, fileMedia.getName()))
+				.setIcon(android.R.drawable.ic_dialog_alert)
+				.setPositiveButton(android.R.string.yes,
+						new DialogInterface.OnClickListener() {
+							@Override
+							public void onClick(DialogInterface dialog,
+									int whichButton) {
+								fileMedia.delete();
+								if (runnable != null)
+									runnable.run();
+							}
+						}).setNegativeButton(android.R.string.cancel, null)
+				.create();
 
-    public static void advancedOptions(final Context context, View v, MenuType t) {
-        LayoutInflater inflater = LayoutInflater.from(VLCApplication.getAppContext());
-        View view = inflater.inflate(R.layout.advanced_options, null);
+		return alertDialog;
+	}
 
-        // build dialog
-        Builder builder = new AlertDialog.Builder(new ContextThemeWrapper(context, R.style.Theme_VLC_AlertMenu))
-                .setView(view);
-        final AlertDialog dialog = builder.create();
-        dialog.setCanceledOnTouchOutside(true);
+	public static void advancedOptions(final Context context, View v, MenuType t) {
+		LayoutInflater inflater = LayoutInflater.from(VLCApplication
+				.getAppContext());
+		View view = inflater.inflate(R.layout.advanced_options, null);
 
-        // register listener on each ExpandableLayout in advanced_layout
-        LinearLayout advanced_layout = (LinearLayout) view.findViewById(R.id.advanced_layout);
-        OnExpandableListener mExpandableListener = new OnExpandableListener() {
-            @Override
-            public void onDismiss() {
-                dialog.dismiss();
-            }
-        };
-        for (int i = 0; i < advanced_layout.getChildCount(); ++i)
-        {
-            View child = advanced_layout.getChildAt(i);
-            if (child instanceof ExpandableLayout) {
-                ((ExpandableLayout) child).setOnExpandableListener(mExpandableListener);
-            }
-        }
+		// build dialog
+		Builder builder = new AlertDialog.Builder(new ContextThemeWrapper(
+				context, R.style.Theme_VLC_AlertMenu)).setView(view);
+		final AlertDialog dialog = builder.create();
+		dialog.setCanceledOnTouchOutside(true);
 
-        View add_subtitle_divider = view.findViewById(R.id.add_subtitle_divider);
-        TextView add_subtitle = (TextView)view.findViewById(R.id.add_subtitle);
-        if(t == MenuType.Video) {
-            add_subtitle.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    Intent intent = new Intent("org.openintents.action.PICK_FILE");
+		// register listener on each ExpandableLayout in advanced_layout
+		LinearLayout advanced_layout = (LinearLayout) view
+				.findViewById(R.id.advanced_layout);
+		OnExpandableListener mExpandableListener = new OnExpandableListener() {
+			@Override
+			public void onDismiss() {
+				dialog.dismiss();
+			}
+		};
 
-                    File file = new File(android.os.Environment.getExternalStorageDirectory().getPath());
-                    intent.setData(Uri.fromFile(file));
+		// TRIBLER
+		TextView toggleDebug = (TextView) view.findViewById(R.id.show_debug);
+		toggleDebug.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				TextView debug = (TextView)((Activity) context)
+						.findViewById(R.id.libtorrent_debug);
+				if (debug != null) {
+					boolean isVisible = debug.getVisibility() == View.VISIBLE;
+					debug.setVisibility(isVisible ? View.INVISIBLE
+							: View.VISIBLE);
 
-                    // Set fancy title and button (optional)
-                    intent.putExtra("org.openintents.extra.TITLE", context.getString(R.string.subtitle_select));
-                    intent.putExtra("org.openintents.extra.BUTTON_TEXT", context.getString(R.string.open));
+					// change preference to debug on or off
+					isVisible = debug.getVisibility() == View.VISIBLE;
+					SharedPreferences prefs = PreferenceManager
+							.getDefaultSharedPreferences(context);
+					SharedPreferences.Editor editor = prefs.edit();
+					editor.putBoolean("libtorrent_debug", (isVisible ? true
+							: false));
+					editor.commit();
+				}
+			}
+		});
+		for (int i = 0; i < advanced_layout.getChildCount(); ++i) {
+			View child = advanced_layout.getChildAt(i);
+			if (child instanceof ExpandableLayout) {
+				((ExpandableLayout) child)
+						.setOnExpandableListener(mExpandableListener);
+			}
+		}
 
-                    if (context
-                            .getPackageManager()
-                            .queryIntentActivities(intent,
-                                    PackageManager.MATCH_DEFAULT_ONLY).size() > 0) {
-                        ((Activity)context).startActivityForResult(intent, INTENT_SPECIFIC);
-                    } else {
-                        // OI intent not found, trying anything
-                        Intent intent2 = new Intent(Intent.ACTION_GET_CONTENT);
-                        intent2.setType("*/*");
-                        intent2.addCategory(Intent.CATEGORY_OPENABLE);
-                        try {
-                            ((Activity)context).startActivityForResult(intent2, INTENT_GENERIC);
-                        } catch(ActivityNotFoundException e) {
-                            Log.i(TAG, "No file picker found on system");
-                            Toast.makeText(context,
-                                    R.string.no_file_picker_found,
-                                    Toast.LENGTH_SHORT).show();
-                        }
-                    }
+		View add_subtitle_divider = view
+				.findViewById(R.id.add_subtitle_divider);
+		TextView add_subtitle = (TextView) view.findViewById(R.id.add_subtitle);
+		if (t == MenuType.Video) {
+			add_subtitle.setOnClickListener(new View.OnClickListener() {
+				@Override
+				public void onClick(View v) {
+					Intent intent = new Intent(
+							"org.openintents.action.PICK_FILE");
 
-                    dialog.dismiss();
-                }
-            });
-        } else {
-            add_subtitle.setVisibility(View.GONE);
-            add_subtitle_divider.setVisibility(View.GONE);
-        }
+					File file = new File(android.os.Environment
+							.getExternalStorageDirectory().getPath());
+					intent.setData(Uri.fromFile(file));
 
-        // show dialog
-        dialog.show();
+					// Set fancy title and button (optional)
+					intent.putExtra("org.openintents.extra.TITLE",
+							context.getString(R.string.subtitle_select));
+					intent.putExtra("org.openintents.extra.BUTTON_TEXT",
+							context.getString(R.string.open));
 
-        // force size
-        float density = context.getResources().getDisplayMetrics().density;
-        LayoutParams lp = dialog.getWindow().getAttributes();
-        lp.width = (int) (density * 300 + 0.5f); // 300dp
+					if (context
+							.getPackageManager()
+							.queryIntentActivities(intent,
+									PackageManager.MATCH_DEFAULT_ONLY).size() > 0) {
+						((Activity) context).startActivityForResult(intent,
+								INTENT_SPECIFIC);
+					} else {
+						// OI intent not found, trying anything
+						Intent intent2 = new Intent(Intent.ACTION_GET_CONTENT);
+						intent2.setType("*/*");
+						intent2.addCategory(Intent.CATEGORY_OPENABLE);
+						try {
+							((Activity) context).startActivityForResult(
+									intent2, INTENT_GENERIC);
+						} catch (ActivityNotFoundException e) {
+							Log.i(TAG, "No file picker found on system");
+							Toast.makeText(context,
+									R.string.no_file_picker_found,
+									Toast.LENGTH_SHORT).show();
+						}
+					}
 
-        // force location
-        if (v != null) {
-            lp.gravity = Gravity.TOP | Gravity.LEFT;
-            int[] location = new int[2];
-            v.getLocationInWindow(location);
-            lp.x = location[0] - lp.width;
-            lp.y = location[1] - (int) (density * 50 + 0.5f); // -50dp to compensate alertdialog margins
-        }
+					dialog.dismiss();
+				}
+			});
+		} else {
+			add_subtitle.setVisibility(View.GONE);
+			add_subtitle_divider.setVisibility(View.GONE);
+		}
 
-        dialog.getWindow().setAttributes(lp);
-    }
+		// show dialog
+		dialog.show();
+
+		// force size
+		float density = context.getResources().getDisplayMetrics().density;
+		LayoutParams lp = dialog.getWindow().getAttributes();
+		lp.width = (int) (density * 300 + 0.5f); // 300dp
+
+		// force location
+		if (v != null) {
+			lp.gravity = Gravity.TOP | Gravity.LEFT;
+			int[] location = new int[2];
+			v.getLocationInWindow(location);
+			lp.x = location[0] - lp.width;
+			lp.y = location[1] - (int) (density * 50 + 0.5f); // -50dp to
+																// compensate
+																// alertdialog
+																// margins
+		}
+
+		dialog.getWindow().setAttributes(lp);
+	}
 }
