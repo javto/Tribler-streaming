@@ -37,6 +37,14 @@
                 android:defaultValue="true">
         </CheckBoxPreference>
     </PreferenceCategory>
+    <PreferenceCategory android:title="@string/extra_possibilities" >
+        <Preference
+                android:title="@string/del_cache"
+                android:summary="@string/del_cache_summary"
+                android:key="del_cache"
+                android:defaultValue="true">
+        </Preference>
+    </PreferenceCategory>
    
  
 </PreferenceScreen>

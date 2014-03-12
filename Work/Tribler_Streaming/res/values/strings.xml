@@ -446,6 +446,9 @@
 	<string name="listenport">Listen Port</string>
 	<string name="listenport_sum">Set the port to listen to, default is 54321</string>
 	<string name="extra_info">Info Settings</string>
+	<string name="del_cache">Delete cache</string>
+	<string name="del_cache_summary">This will delete the stored movies and possibly associated data in the same folder</string>
+	<string name="extra_possibilities">Extra Possibilities</string>
 	<!--  TRIBLER movie image descr. -->
 	<string name="magnet1text">Tears of Steel</string>
 	<string name="magnet2text">Sintel</string>

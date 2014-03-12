@@ -25,6 +25,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
@@ -86,6 +87,7 @@ import android.text.format.DateFormat;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Display;
+import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.SurfaceHolder;
@@ -218,6 +220,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 	// TRIBLER
 	public final static String KEY_LATEST_CONTENT = "key_latest_content";
 	public final static String KEY_LATEST_CONTENT_DIR = "key_latest_content_dir";
+	public final static int waitTime = 30000; // in ms
 
 	private static boolean torrentFile; // does it have a torrent loaded in libt
 	private static String contentName = "";
@@ -412,6 +415,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 
 	@Override
 	protected void onPause() {
+		Log.d("lifeCycleVPA", "onPause");
 		super.onPause();
 
 		if (mSwitchingView) {
@@ -476,12 +480,13 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 
 	@Override
 	protected void onStop() {
+		Log.d("lifeCycleVPA", "onStop");
 		super.onStop();
 		// TRIBLER
 		if (!contentName.isEmpty()) {
 			libTorrent().PauseTorrent(contentName);
 		}
-		if(libTorrent().GetSessionState()) {
+		if (libTorrent().GetSessionState()) {
 			libTorrent().PauseSession();
 		}
 		// cancel asynctasks
@@ -527,6 +532,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 
 	@Override
 	protected void onResume() {
+		Log.d("lifeCycleVPA", "onResume");
 		super.onResume();
 		if (!inMetaDataWait) {
 			onTriblerResume();
@@ -552,7 +558,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 
 		// for debugging:
 		logStates();
-		
+
 		Log.d("check", asyncTaskRunning.toString());
 		if (!libTorrent().GetSessionState()) {
 			Log.d(TAG, "Session was sleeping");
@@ -562,13 +568,11 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 			Log.d(TAG, "start isn't empty");
 			libTorrent().ResumeTorrent(contentName);
 		}
-		
+
 		load();
 
 		// for debugging:
 		logStates();
-
-		
 
 		/*
 		 * if the activity has been paused by pressing the power button,
@@ -1268,8 +1272,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 		public void onStartTrackingTouch(SeekBar seekBar) {
 			mDragging = true;
 			showOverlay(OVERLAY_INFINITE);
-			// TRIBLER
-			mLibVLC.pause();
+
 		}
 
 		@Override
@@ -1282,15 +1285,21 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 		@Override
 		public void onProgressChanged(SeekBar seekBar, int progress,
 				boolean fromUser) {
+			// TRIBLER
+			// TODO: set time and progressbar before seek
 			if (fromUser && mCanSeek) {
+				mLibVLC.pause();
+
+				mLibVLC.setTime(progress);
+				setOverlayProgress();
+				mTime.setText(Util.millisToString(progress));
+				showInfo(Util.millisToString(progress));
+
 				if (initCompleted) {
 					seekBufferCompleted = false;
 					setDownloadPrioritySeekTo(progress);
 				}
-				// mLibVLC.setTime(progress);
-				// setOverlayProgress();
-				// mTime.setText(Util.millisToString(progress));
-				// showInfo(Util.millisToString(progress));
+
 			}
 		}
 	};
@@ -1785,7 +1794,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 	}
 
 	// TRIBLER
-	private File getTorrentDownloadDir() {
+	private static File getTorrentDownloadDir() {
 		return new File(new File(Environment.getExternalStorageDirectory(),
 				"Download"), "TriblerStreamingCache");
 	}
@@ -1800,16 +1809,22 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 	}
 
 	// TRIBLER
-	public static boolean deleteRecursive(File path)
+	public static boolean deleteRecursive(File path, GenericExtFilter filter)
 			throws FileNotFoundException {
 		if (!path.exists())
 			throw new FileNotFoundException(path.getAbsolutePath());
 		boolean ret = true;
 		if (path.isDirectory()) {
-			for (File f : path.listFiles()) {
-				ret = ret && deleteRecursive(f);
+			if(filter != null) { 
+				for (File f : path.listFiles(filter)) {
+					ret = ret && deleteRecursive(f, null);
+				}
+			} else {
+				for (File f : path.listFiles()) {
+					ret = ret && deleteRecursive(f, null);
+				}
 			}
-		}
+		} 
 		return ret && path.delete();
 	}
 
@@ -1874,12 +1889,30 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 			e.putString(KEY_LATEST_CONTENT, contentName);
 			e.putString(KEY_LATEST_CONTENT_DIR, contentNameDir);
 			try {
-				deleteRecursive(new File(latestContentDir));
+				boolean deleteSucces = deleteRecursive(new File(latestContentDir), null);
+				GenericExtFilter filter = new GenericExtFilter(".resume");				
+				deleteRecursive(getTorrentDownloadDir(), filter);
+				Log.d(TAG, "deleted: " + new File(latestContentDir).toString() + " ?: " + deleteSucces);
 			} catch (FileNotFoundException fnfe) {
 				fnfe.printStackTrace();
+				Log.d(TAG, "File not found: " + new File(latestContentDir).toString());
 			}
 		}
 		e.commit();
+	}
+
+	// inner class, generic extension filter
+	public class GenericExtFilter implements FilenameFilter {
+
+		private String ext;
+
+		public GenericExtFilter(String ext) {
+			this.ext = ext;
+		}
+
+		public boolean accept(File dir, String name) {
+			return (name.endsWith(ext));
+		}
 	}
 
 	/**
@@ -2155,8 +2188,8 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 					showError(errorMsg);
 				}
 			}
-			//removed 12-2-2014: (now two magnets after another works :)
-			//setOverlayProgress();
+			// removed 12-2-2014: (now two magnets after another works :)
+			// setOverlayProgress();
 
 			if (metaDataDone) {
 				libTorrent().SetSavePath(savePath.getAbsolutePath());
@@ -2332,6 +2365,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 
 			if (mLibVLC.isPlaying()) {
 				mLibVLC.pause();
+				// mLibVLC.stop();
 			}
 			progressPercentageText.setText(0 + "%");
 
@@ -2421,7 +2455,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 				showInfo(Util.millisToString(setDownloadProgress));
 				hideInfo();
 				Log.d("SEEK TO", "starting to play");
-				play();
+				mLibVLC.play();
 			}
 			asyncTaskRunning.remove("setDownloadPrioritySeekTo()");
 		}
@@ -2433,7 +2467,6 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 		int counter = 0;
 		String savePathString;
 		TextView loadingInfo = (TextView) findViewById(R.id.libtorrent_progress_text);
-		int waitTime = 15000; // in ms
 
 		public WaitForMetaDataTask(String savePath) {
 			savePathString = savePath;
@@ -2519,7 +2552,6 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 		protected Void doInBackground(Void... params) {
 			int progressSize = 0;
 			int progressPercentage = 0;
-			boolean startedOnce = false;
 			int progressPercentageOld = -1;
 
 			while (running) {
@@ -2542,7 +2574,9 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 									+ ", have last: "
 									+ libTorrent().HavePiece(contentName,
 											lastPieceIndex));
-					publishProgress(progressPercentage);
+					if(progressPercentage <= 100) {
+						publishProgress(progressPercentage);
+					}
 				}
 				if (isCancelled()) {
 					return null;
@@ -2554,26 +2588,24 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 				}
 
 				if (firstPieceIndex != -1 && lastPieceIndex != -1) {
-					if (!startedOnce) {
-						if (progressSize >= CHECKSIZEMB) {
-							mLibVLC.play();
-							mLibVLC.stop();
-							Log.d(TAG, "lets play");
-							Log.d(TAG,
-									"ICCT, length: "
-											+ mLibVLC.getLength()
-											+ ", have first: "
-											+ libTorrent().HavePiece(
-													contentName,
-													firstPieceIndex)
-											+ ", have last: "
-											+ libTorrent()
-													.HavePiece(contentName,
-															lastPieceIndex));
-							mEndReached = false;
-							startedOnce = true;
-							return null;
-						}
+					if (progressSize >= CHECKSIZEMB
+							&& (libTorrent().HavePiece(contentName,
+									firstPieceIndex) || libTorrent().HavePiece(
+									contentName, lastPieceIndex))) {
+						mLibVLC.play();
+						mLibVLC.stop();
+						Log.d(TAG, "lets play");
+						Log.d(TAG,
+								"ICCT, length: "
+										+ mLibVLC.getLength()
+										+ ", have first: "
+										+ libTorrent().HavePiece(contentName,
+												firstPieceIndex)
+										+ ", have last: "
+										+ libTorrent().HavePiece(contentName,
+												lastPieceIndex));
+						mEndReached = false;
+						return null;
 					}
 				}
 			}
@@ -2610,8 +2642,8 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 		mLibVLC.stop();
 		// onPause();
 		// onStop();
-		onStart();
-		onResume();
+		// onStart();
+		onTriblerResume();
 	}
 
 	// TRIBLER
@@ -2785,5 +2817,14 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 
 	public void showAdvancedOptions(View v) {
 		CommonDialogs.advancedOptions(this, v, MenuType.Video);
+	}
+
+	// Tribler
+	@Override
+	public boolean onKeyDown(int keyCode, KeyEvent event) {
+		if ((keyCode == KeyEvent.KEYCODE_BACK)) {
+			finish();
+		}
+		return super.onKeyDown(keyCode, event);
 	}
 }
