@@ -101,6 +101,7 @@ import android.view.WindowManager;
 import android.view.animation.AnimationUtils;
 import android.widget.FrameLayout;
 import android.widget.ImageButton;
+import android.widget.ProgressBar;
 import android.widget.SeekBar;
 import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.TextView;
@@ -1721,23 +1722,13 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 			int hackMb = sizeMB < max && progressSize > 5 ? 5 : 0;
 			int progress = (int) (sizeMB == 0 ? 0
 					: (max * progressSize - hackMb) / sizeMB);
-			// Log.v(TAG, "MAX: " + max + " | SIZE: " + sizeMB + " | progress: "
-			// + progress);
-			// Log.d("ASYNCTASKS RUNNING", asyncTaskRunning.toString());
 			mSeekbar.setSecondaryProgress(progress);
 			if (findViewById(R.id.libtorrent_debug).getVisibility() == View.VISIBLE
 					&& !inMetaDataWait) {
 				((TextView) findViewById(R.id.libtorrent_debug))
 						.setText(libTorrent().GetTorrentStatusText(contentName)
-								+ "\n"
-								+ libTorrent().GetTorrentProgressSize(
-										contentName)
-								+ " / "
-								+ (fileLength / (1024 * 1024))
-								+ "\n"
-								+ TorrentState.values()[libTorrent()
-										.GetTorrentState(contentName)]
-										.getName());
+								+ sizeMB
+								+ "MB");
 			}
 		}
 		return time;
@@ -1833,11 +1824,14 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 		long totalTime = mLibVLC.getLength();
 		if (totalTime != 0) {
 			double ratio = (double) progress / totalTime;
-
+			long pieceSize = libTorrent().GetPieceSize(contentName, 0);
 			int numberOfPieces = lastPieceIndex - firstPieceIndex;
 			int startNewDownloadHere = firstPieceIndex
 					+ ((int) Math.floor(numberOfPieces * ratio));
-
+			//then go back a bit to make up for the fact of metadata at start or end
+			int goBack = (int) ((1024*1024)/pieceSize);
+			startNewDownloadHere -= ((goBack < 1)? 1: goBack) ; //go back one mb
+			
 			Log.d("SEEK TO", "startNewDownloadHere: " + startNewDownloadHere
 					+ "lastPieceIndex: " + lastPieceIndex + "firstPieceIndex: "
 					+ firstPieceIndex);
@@ -2188,8 +2182,6 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 					showError(errorMsg);
 				}
 			}
-			// removed 12-2-2014: (now two magnets after another works :)
-			// setOverlayProgress();
 
 			if (metaDataDone) {
 				libTorrent().SetSavePath(savePath.getAbsolutePath());
@@ -2341,8 +2333,9 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 
 	private class SeekTask extends AsyncTask<Void, Integer, Void> {
 		boolean running = true;
-		TextView progressPercentageText = (TextView) findViewById(R.id.libtorrent_progress_percentage);
+		//TextView progressPercentageText = (TextView) findViewById(R.id.libtorrent_progress_percentage);
 		TextView loadingInfo = (TextView) findViewById(R.id.libtorrent_progress_text);
+		ProgressBar loadingBar = (ProgressBar) findViewById(R.id.libtorrent_progressbar);
 		int setDownloadProgress;
 		int startNewDownloadHere;
 
@@ -2367,17 +2360,19 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 				mLibVLC.pause();
 				// mLibVLC.stop();
 			}
-			progressPercentageText.setText(0 + "%");
-
+			//progressPercentageText.setText(0 + "%");
+			mPlayPause.setVisibility(View.INVISIBLE);
 			loadingInfo.setText("Seeking...");
-
+			loadingBar.setProgress(0);
 			findViewById(R.id.libtorrent_loading).setVisibility(View.VISIBLE);
 		}
 
 		@Override
 		protected void onProgressUpdate(Integer... progress) {
 			int progressPercentage = progress[0];
-			progressPercentageText.setText(progressPercentage + "%");
+			loadingBar.setProgress(progressPercentage);
+			setOverlayProgress();
+			//progressPercentageText.setText(progressPercentage + "%");
 		}
 
 		@Override
@@ -2454,6 +2449,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 				Log.d("SEEK TO", "setting text and showing overlay");
 				showInfo(Util.millisToString(setDownloadProgress));
 				hideInfo();
+				showOverlay();
 				Log.d("SEEK TO", "starting to play");
 				mLibVLC.play();
 			}
@@ -2467,7 +2463,8 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 		int counter = 0;
 		String savePathString;
 		TextView loadingInfo = (TextView) findViewById(R.id.libtorrent_progress_text);
-
+		ProgressBar loadingBar = (ProgressBar) findViewById(R.id.libtorrent_progressbar);
+		
 		public WaitForMetaDataTask(String savePath) {
 			savePathString = savePath;
 		}
@@ -2481,7 +2478,9 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 		@Override
 		protected void onPreExecute() {
 			asyncTaskRunning.add("waitForMetaData()");
+			mPlayPause.setVisibility(View.INVISIBLE);
 			loadingInfo.setText("Locating Video...");
+			loadingBar.setVisibility(View.INVISIBLE);
 		}
 
 		@Override
@@ -2527,7 +2526,8 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 		boolean running = true;
 		TextView progressPercentageText = (TextView) findViewById(R.id.libtorrent_progress_percentage);
 		TextView loadingInfo = (TextView) findViewById(R.id.libtorrent_progress_text);
-
+		ProgressBar loadingBar = (ProgressBar) findViewById(R.id.libtorrent_progressbar);
+		
 		@Override
 		protected void onCancelled() {
 			running = false;
@@ -2539,13 +2539,17 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 		protected void onPreExecute() {
 			asyncTaskRunning.add("load()");
 			loadingInfo.setText("Loading Video...");
+			loadingBar.setVisibility(View.VISIBLE);
+			mPlayPause.setVisibility(View.INVISIBLE);
+			loadingBar.setMax(100);
 		}
 
 		@Override
 		protected void onProgressUpdate(Integer... progress) {
 			int progressPercentage = progress[0];
-			progressPercentageText.setText(progressPercentage + "%");
-			setOverlayProgress();
+			//progressPercentageText.setText(progressPercentage + "%");
+			loadingBar.setProgress(progressPercentage);
+			setOverlayProgress();	
 		}
 
 		@Override
@@ -2617,7 +2621,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 			Log.v(TAG, "onPostExecute");
 			if (running) {
 				findViewById(R.id.libtorrent_loading).setVisibility(View.GONE);
-
+				
 				for (int i = 0; i < piecePriorities.length; i++) {
 					piecePriorities[i] = FilePriority.NORMAL.ordinal();
 				}
