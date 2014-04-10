@@ -8,7 +8,7 @@ Solution: Combining Libtorrent and VLC into a single .APK
 Clone the repository to get the APK in Tribler-streaming/Work/APK/
 
 _Status: operational on Nexus 10 device_
-Please download the latest release [here](https://github.com/javto/Tribler-streaming/releases/download/0.5/Tribler.Streaming.apk)
+Please download the latest release [here](https://github.com/javto/Tribler-streaming/releases/download/0.7/Tribler.Streaming.apk)
 
 Limitations and ToDo: improve seek behavior, may crash when swarm download to slow (buffer underrun)
 
