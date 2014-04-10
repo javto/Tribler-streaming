@@ -18,17 +18,21 @@ public class TorrentPreferences extends PreferenceFragment {
 		super.onCreate(savedInstanceState);
 
 		addPreferencesFromResource(R.xml.torrent_settings);
-		
+
 		Preference button = (Preference) findPreference("del_cache");
 		button.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
 			@Override
 			public boolean onPreferenceClick(Preference arg0) {
 				try {
 					deleteRecursive(getCacheFolder());
-					Toast.makeText(getActivity(), "Cache deleted.", 
-							   Toast.LENGTH_SHORT).show();
+					getActivity().finish();
+					Toast.makeText(getActivity(), "Cache deleted.",
+							Toast.LENGTH_SHORT).show();
 				} catch (FileNotFoundException e) {
 					e.printStackTrace();
+					getActivity().finish();
+					Toast.makeText(getActivity(), "Cache was already deleted.",
+							Toast.LENGTH_SHORT).show();
 				}
 				return true;
 			}
@@ -49,7 +53,9 @@ public class TorrentPreferences extends PreferenceFragment {
 	}
 
 	private File getCacheFolder() {
-		return new File(new File(Environment.getExternalStorageDirectory(),
-				"Download"), "TriblerStreamingCache");
+		return new File(Environment.getExternalStorageDirectory(),
+				"TriblerStreamingCache");
+		// return new File(new File(Environment.getExternalStorageDirectory(),
+		// "Download"), "TriblerStreamingCache");
 	}
 }

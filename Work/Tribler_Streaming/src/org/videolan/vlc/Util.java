@@ -117,7 +117,7 @@ public class Util {
 
         instance.setSubtitlesEncoding(pref.getString("subtitle_text_encoding", ""));
         instance.setTimeStretching(pref.getBoolean("enable_time_stretching_audio", false));
-        instance.setFrameSkip(pref.getBoolean("enable_frame_skip", false));
+        instance.setFrameSkip(pref.getBoolean("enable_frame_skip", true));
         instance.setChroma(pref.getString("chroma_format", ""));
         instance.setVerboseMode(pref.getBoolean("enable_verbose_mode", true));
 

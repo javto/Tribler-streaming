@@ -38,6 +38,7 @@ public class VLCApplication extends Application {
     private static VLCApplication instance;
 
     public final static String SLEEP_INTENT = "org.videolan.vlc.SleepIntent";
+    
     // TRIBLER
  	private LibTorrent libTorrent = null;
  	private static int LISTEN_PORT = 0;
@@ -47,6 +48,7 @@ public class VLCApplication extends Application {
 
  	public LibTorrent getLibTorrent() {
  		if (this.libTorrent == null) {
+ 			Log.d(TAG,"created new libTorrent from no settings!");
  			this.libTorrent = new LibTorrent();
  			this.libTorrent.SetSession(LISTEN_PORT, LIMIT_UL, LIMIT_DL, ENCRYPTION);
  			this.libTorrent.ResumeSession();

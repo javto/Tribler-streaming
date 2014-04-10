@@ -53,7 +53,7 @@
             android:title="@string/deblocking"
             android:summary="@string/deblocking_summary" />
         <CheckBoxPreference
-            android:defaultValue="false"
+            android:defaultValue="true"
             android:key="enable_frame_skip"
             android:summary="@string/enable_frame_skip_summary"
             android:title="@string/enable_frame_skip" />
