@@ -48,7 +48,7 @@ import android.widget.Spinner;
 import android.widget.ToggleButton;
 
 import com.actionbarsherlock.app.SherlockFragment;
-import com.tudelft.triblersvod.example.R;
+import org.tribler.triblersvod.gui.R;
 
 public class EqualizerFragment extends SherlockFragment {
 

@@ -1,4 +1,4 @@
-package com.tudelft.triblersvod.example;
+package org.tribler.triblersvod.gui;
 
 public enum TorrentState {
 	QEUED_FOR_CHECKING("Qeued for checking"), CHECKING_FILES("Checking files"), DOWNLOADING_METADATA(

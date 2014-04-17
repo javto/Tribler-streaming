@@ -49,7 +49,7 @@ import android.view.ViewGroup;
 import android.view.ViewParent;
 import android.view.accessibility.AccessibilityEvent;
 
-import com.tudelft.triblersvod.example.R;
+import org.tribler.triblersvod.gui.R;
 
 
 public class SlidingPaneLayout extends ViewGroup {

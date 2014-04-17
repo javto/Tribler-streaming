@@ -49,7 +49,7 @@ import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.EditText;
 import android.widget.ListView;
 
-import com.tudelft.triblersvod.example.R;
+import org.tribler.triblersvod.gui.R;
 
 public class BrowserActivity extends ListActivity {
     public final static String TAG = "VLC/BrowserActivity";

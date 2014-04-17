@@ -49,7 +49,7 @@ import android.widget.AdapterView.OnItemLongClickListener;
 import android.widget.ListView;
 
 import com.actionbarsherlock.app.SherlockListFragment;
-import com.tudelft.triblersvod.example.R;
+import org.tribler.triblersvod.gui.R;
 
 public class DirectoryViewFragment extends SherlockListFragment implements ISortable {
     public final static String TAG = "VLC/DirectoryViewFragment";

@@ -36,7 +36,7 @@ import android.widget.AdapterView.AdapterContextMenuInfo;
 import android.widget.ListView;
 
 import com.actionbarsherlock.app.SherlockListFragment;
-import com.tudelft.triblersvod.example.R;
+import org.tribler.triblersvod.gui.R;
 
 public class HistoryFragment extends SherlockListFragment {
     public final static String TAG = "VLC/HistoryFragment";

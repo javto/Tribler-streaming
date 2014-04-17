@@ -19,11 +19,11 @@
  *****************************************************************************/
 package org.videolan.vlc;
 
+import org.tribler.triblersvod.gui.R;
+
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.os.AsyncTask;
-
-import com.tudelft.triblersvod.example.R;
 
 /**
  * A small callback helper class to make running callbacks in threads easier

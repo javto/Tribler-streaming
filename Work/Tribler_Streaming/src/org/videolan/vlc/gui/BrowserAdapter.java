@@ -40,7 +40,7 @@ import android.widget.CompoundButton;
 import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.TextView;
 
-import com.tudelft.triblersvod.example.R;
+import org.tribler.triblersvod.gui.R;
 
 public class BrowserAdapter extends ArrayAdapter<File>
                             implements Comparator<File> {

@@ -34,7 +34,7 @@ import android.os.Build;
 import android.view.View;
 import android.widget.RemoteViews;
 
-import com.tudelft.triblersvod.example.R;
+import org.tribler.triblersvod.gui.R;
 
 public class VLCAppWidgetProvider extends AppWidgetProvider {
     public static final String TAG = "VLC/VLCAppWidgetProvider";

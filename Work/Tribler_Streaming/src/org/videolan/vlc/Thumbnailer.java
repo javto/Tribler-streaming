@@ -29,6 +29,7 @@ import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.tribler.triblersvod.gui.R;
 import org.videolan.libvlc.LibVLC;
 import org.videolan.libvlc.LibVlcException;
 import org.videolan.libvlc.Media;
@@ -41,8 +42,6 @@ import android.graphics.Bitmap.Config;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Display;
-
-import com.tudelft.triblersvod.example.R;
 
 public class Thumbnailer implements Runnable {
     public final static String TAG = "VLC/Thumbnailer";

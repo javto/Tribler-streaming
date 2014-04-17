@@ -20,6 +20,7 @@
 
 package org.videolan.vlc.gui;
 
+import org.tribler.triblersvod.gui.TorrentSelectActivity;
 import org.videolan.libvlc.LibVlcException;
 import org.videolan.libvlc.LibVlcUtil;
 import org.videolan.vlc.AudioService;
@@ -79,8 +80,7 @@ import com.actionbarsherlock.view.MenuInflater;
 import com.actionbarsherlock.view.MenuItem;
 import com.actionbarsherlock.view.Window;
 import com.slidingmenu.lib.SlidingMenu;
-import com.tudelft.triblersvod.example.R;
-import com.tudelft.triblersvod.example.TorrentSelectActivity;
+import org.tribler.triblersvod.gui.R;
 
 public class MainActivity extends SherlockFragmentActivity {
     public final static String TAG = "VLC/MainActivity";

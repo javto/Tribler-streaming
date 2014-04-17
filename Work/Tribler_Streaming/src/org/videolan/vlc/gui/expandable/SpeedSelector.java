@@ -31,7 +31,7 @@ import android.widget.Button;
 import android.widget.SeekBar;
 import android.widget.SeekBar.OnSeekBarChangeListener;
 
-import com.tudelft.triblersvod.example.R;
+import org.tribler.triblersvod.gui.R;
 
 public class SpeedSelector extends ExpandableLayout {
     public final static String TAG = "VLC/SpeedSelector";

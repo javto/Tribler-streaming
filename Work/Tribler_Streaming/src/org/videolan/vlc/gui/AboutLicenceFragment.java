@@ -29,7 +29,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.WebView;
 
-import com.tudelft.triblersvod.example.R;
+import org.tribler.triblersvod.gui.R;
 
 public class AboutLicenceFragment extends Fragment {
     public final static String TAG = "VLC/AboutLicenceFragment";

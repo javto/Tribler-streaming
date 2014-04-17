@@ -43,7 +43,7 @@ import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.tudelft.triblersvod.example.R;
+import org.tribler.triblersvod.gui.R;
 
 public class DirectoryAdapter extends BaseAdapter {
     public final static String TAG = "VLC/DirectoryAdapter";

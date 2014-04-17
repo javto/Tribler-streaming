@@ -1,4 +1,4 @@
-package com.tudelft.triblersvod.example;
+package org.tribler.triblersvod.gui;
 
 import android.app.Activity;
 import android.os.Bundle;

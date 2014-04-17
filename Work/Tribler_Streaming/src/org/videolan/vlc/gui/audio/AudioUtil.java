@@ -53,7 +53,7 @@ import android.provider.MediaStore;
 import android.util.Log;
 import android.widget.Toast;
 
-import com.tudelft.triblersvod.example.R;
+import org.tribler.triblersvod.gui.R;
 
 public class AudioUtil {
     public final static String TAG = "VLC/AudioUtil";

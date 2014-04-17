@@ -36,7 +36,7 @@ import android.view.animation.RotateAnimation;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.tudelft.triblersvod.example.R;
+import org.tribler.triblersvod.gui.R;
 
 public class AboutMainFragment extends Fragment {
     public final static String TAG = "VLC/AboutMainFragment";

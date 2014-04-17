@@ -40,6 +40,9 @@ import java.util.Date;
 import java.util.Locale;
 import java.util.Map;
 
+import org.tribler.triblersvod.gui.FilePriority;
+import org.tribler.triblersvod.gui.StorageModes;
+import org.tribler.triblersvod.gui.TorrentState;
 import org.videolan.libvlc.EventHandler;
 import org.videolan.libvlc.IVideoPlayer;
 import org.videolan.libvlc.LibVLC;
@@ -108,10 +111,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.softwarrior.libtorrent.LibTorrent;
-import com.tudelft.triblersvod.example.FilePriority;
-import com.tudelft.triblersvod.example.R;
-import com.tudelft.triblersvod.example.StorageModes;
-import com.tudelft.triblersvod.example.TorrentState;
+import org.tribler.triblersvod.gui.R;
 
 public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 	public final static String TAG = "VLC/VideoPlayerActivity";
@@ -2576,7 +2576,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 		protected void onCancelled() {
 			running = false;
 			asyncTaskRunning.remove("load()");
-			findViewById(R.id.libtorrent_loading).setVisibility(View.GONE);
+			loadingBar.setVisibility(View.GONE);
 		}
 
 		@Override
@@ -2633,12 +2633,15 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 					}
 				}
 				if (isCancelled()) {
+					running = false;
 					return null;
 				}
 				try {
 					Thread.sleep(200);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
+					running = false;
+					return null;
 				}
 
 				if (firstPieceIndex != -1 && lastPieceIndex != -1) {
@@ -2677,8 +2680,9 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 		protected void onPostExecute(Void result) {
 			Log.v(TAG, "onPostExecute");
 			if (running) {
-				findViewById(R.id.libtorrent_loading).setVisibility(View.GONE);
-
+				loadingBar.setVisibility(View.GONE);
+				loadingInfo.setVisibility(View.GONE);
+				
 				for (int i = 0; i < piecePriorities.length; i++) {
 					piecePriorities[i] = FilePriority.NORMAL.ordinal();
 				}

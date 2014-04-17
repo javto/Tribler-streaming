@@ -62,7 +62,7 @@ import android.widget.PopupMenu;
 import android.widget.PopupMenu.OnMenuItemClickListener;
 
 import com.actionbarsherlock.app.SherlockFragment;
-import com.tudelft.triblersvod.example.R;
+import org.tribler.triblersvod.gui.R;
 
 public class AudioBrowserFragment extends SherlockFragment {
     public final static String TAG = "VLC/AudioBrowserFragment";

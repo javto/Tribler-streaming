@@ -34,7 +34,7 @@ import android.widget.TabHost;
 import android.widget.TabHost.OnTabChangeListener;
 import android.widget.TextView;
 
-import com.tudelft.triblersvod.example.R;
+import org.tribler.triblersvod.gui.R;
 
 public class AboutActivity extends FragmentActivity implements OnTabChangeListener {
     public final static String TAG = "VLC/AboutActivity";

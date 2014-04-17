@@ -38,7 +38,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 
-import com.tudelft.triblersvod.example.R;
+import org.tribler.triblersvod.gui.R;
 
 public class TimeSleep extends ExpandableLayout {
     public final static String TAG = "VLC/TimeSleep";

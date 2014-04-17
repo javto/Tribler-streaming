@@ -40,7 +40,7 @@ import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.TextView;
 
-import com.tudelft.triblersvod.example.R;
+import org.tribler.triblersvod.gui.R;
 
 public class SidebarAdapter extends BaseAdapter {
     public final static String TAG = "VLC/SidebarAdapter";

@@ -31,7 +31,7 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.tudelft.triblersvod.example.R;
+import org.tribler.triblersvod.gui.R;
 
 public class DebugLogActivity extends Activity {
     public final static String TAG = "VLC/DebugLogActivity";

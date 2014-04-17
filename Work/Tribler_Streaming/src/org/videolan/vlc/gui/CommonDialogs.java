@@ -50,7 +50,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.tudelft.triblersvod.example.R;
+import org.tribler.triblersvod.gui.R;
 
 public class CommonDialogs {
 	public final static String TAG = "VLC/CommonDialogs";

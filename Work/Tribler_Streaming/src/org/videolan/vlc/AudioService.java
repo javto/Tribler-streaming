@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Stack;
 
+import org.tribler.triblersvod.gui.R;
 import org.videolan.libvlc.EventHandler;
 import org.videolan.libvlc.LibVLC;
 import org.videolan.libvlc.LibVlcException;
@@ -77,8 +78,6 @@ import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.widget.RemoteViews;
 import android.widget.Toast;
-
-import com.tudelft.triblersvod.example.R;
 
 public class AudioService extends Service {
 

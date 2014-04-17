@@ -19,7 +19,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.widget.TextView;
 
-import com.tudelft.triblersvod.example.R;
+import org.tribler.triblersvod.gui.R;
 
 public class CompatErrorActivity extends Activity {
     public final static String TAG = "VLC/CompatErrorActivity";

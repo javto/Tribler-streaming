@@ -1,4 +1,4 @@
-package com.tudelft.triblersvod.example;
+package org.tribler.triblersvod.gui;
 
 public enum FilePriority {
 	DONTDOWNLOAD, NORMAL, HIGHERTHANNORMAL, ASLIKELYASPARTIAL, PREFERREDOVERPARTIAL, SAMEASPREFERREDOVERPARTIAL, ASLIKELYASNORMAL, MAXPRIORITY;
