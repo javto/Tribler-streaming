@@ -1,5 +1,5 @@
 /**
- *  Written by Arno Bakker
+ *  Written by Jaap van Touw
  *  see LICENSE.txt for license information
  */
 
