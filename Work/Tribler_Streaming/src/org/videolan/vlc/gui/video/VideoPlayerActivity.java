@@ -41,6 +41,7 @@ import java.util.Locale;
 import java.util.Map;
 
 import org.tribler.triblersvod.gui.FilePriority;
+import org.tribler.triblersvod.gui.R;
 import org.tribler.triblersvod.gui.StorageModes;
 import org.tribler.triblersvod.gui.TorrentState;
 import org.videolan.libvlc.EventHandler;
@@ -111,7 +112,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.softwarrior.libtorrent.LibTorrent;
-import org.tribler.triblersvod.gui.R;
 
 public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 	public final static String TAG = "VLC/VideoPlayerActivity";
@@ -1279,8 +1279,8 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 		public void onStopTrackingTouch(SeekBar seekBar) {
 			mDragging = false;
 			onProgressChanged(seekBar, lastRecordedProgress, true);
-			showOverlay();
-			hideInfo();
+			//showOverlay();
+			//hideInfo();
 		}
 
 		@Override
@@ -1289,7 +1289,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 			// TRIBLER
 			lastRecordedProgress = progress;
 
-			if (fromUser && mCanSeek && !mDragging) {
+			if (fromUser && mCanSeek && !mDragging && initCompleted) {
 				float seekToPosition = (progress * 1.0f) / mLibVLC.getLength();
 				if (seekBar.getSecondaryProgress() != 0) {
 					float secondaryPosition = (seekBar.getSecondaryProgress() * 1.0f)
@@ -1302,20 +1302,15 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 				} else {
 					prepareSeek(progress, seekToPosition);
 				}
-
 			}
 		}
 
 		private void prepareSeek(int progress, float seekToPosition) {
-			mLibVLC.pause();
-
 			mTime.setText(Util.millisToString(progress));
 			showInfo(Util.millisToString(progress));
-
-			if (initCompleted) {
-				seekBufferCompleted = false;
-				setDownloadPrioritySeekTo(seekToPosition);
-			}
+			mLibVLC.pause();
+			seekBufferCompleted = false;
+			setDownloadPrioritySeekTo(seekToPosition);
 		}
 	};
 
@@ -2385,6 +2380,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 		protected void onCancelled() {
 			asyncTaskRunning.remove("setDownloadPrioritySeekTo()");
 			running = false;
+			findViewById(R.id.libtorrent_loading).setVisibility(View.GONE);
 		}
 
 		@Override
@@ -2393,15 +2389,10 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 			Log.d("SEEK TO", "PreExecute of seek..."
 					+ getPiecePrioritiesString(piecePriorities));
 			findViewById(R.id.libtorrent_loading).setVisibility(View.VISIBLE);
-			if (mLibVLC.isPlaying()) {
-				mLibVLC.pause();
-				// mLibVLC.stop();
-			}
-			// progressPercentageText.setText(0 + "%");
+
 			mPlayPause.setVisibility(View.INVISIBLE);
 			loadingInfo.setText("Seeking...");
 			loadingBar.setProgress(0);
-			loadingBar.setVisibility(View.VISIBLE);
 
 		}
 
@@ -2447,6 +2438,7 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 				long sum = 0;
 
 				if (isCancelled()) {
+					running = false;
 					return null;
 				}
 
@@ -2461,6 +2453,8 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 							Thread.sleep(1000);
 						} catch (InterruptedException e) {
 							e.printStackTrace();
+							running = false;
+							return null;
 						}
 						return null;
 					}
@@ -2472,6 +2466,8 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 					Thread.sleep(500);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
+					running = false;
+					return null;
 				}
 			}
 			return null;
@@ -2491,9 +2487,10 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 				mLibVLC.setPosition(setDownloadPosition);
 				Log.d("SEEK TO", "setting text and showing overlay");
 				hideInfo();
-				showOverlay();
+				showOverlay(0);
 				Log.d("SEEK TO", "starting to play");
-				mLibVLC.play();
+				pause();
+				play();
 			}
 			asyncTaskRunning.remove("setDownloadPrioritySeekTo()");
 		}
@@ -2515,12 +2512,16 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 		protected void onCancelled() {
 			asyncTaskRunning.remove("waitForMetaData()");
 			running = false;
+
+			findViewById(R.id.libtorrent_loading).setVisibility(View.GONE);
 		}
 
 		@Override
 		protected void onPreExecute() {
 			asyncTaskRunning.add("waitForMetaData()");
 			mPlayPause.setVisibility(View.INVISIBLE);
+
+			findViewById(R.id.libtorrent_loading).setVisibility(View.VISIBLE);
 			loadingInfo.setText("Locating Video...");
 			loadingBar.setVisibility(View.INVISIBLE);
 		}
@@ -2554,6 +2555,10 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 		@Override
 		protected void onPostExecute(Void result) {
 			if (running) {
+
+				loadingBar.setVisibility(View.VISIBLE);
+				findViewById(R.id.libtorrent_loading).setVisibility(View.GONE);
+
 				if (counter == -1) {
 					showError("waiting too long for metaData, check link and internet connection and try again");
 				} else {
@@ -2576,14 +2581,14 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 		protected void onCancelled() {
 			running = false;
 			asyncTaskRunning.remove("load()");
-			loadingBar.setVisibility(View.GONE);
+			findViewById(R.id.libtorrent_loading).setVisibility(View.GONE);
 		}
 
 		@Override
 		protected void onPreExecute() {
 			asyncTaskRunning.add("load()");
+			findViewById(R.id.libtorrent_loading).setVisibility(View.VISIBLE);
 			loadingInfo.setText("Loading Video...");
-			loadingBar.setVisibility(View.VISIBLE);
 			mPlayPause.setVisibility(View.INVISIBLE);
 		}
 
@@ -2679,10 +2684,9 @@ public class VideoPlayerActivity extends Activity implements IVideoPlayer {
 		@Override
 		protected void onPostExecute(Void result) {
 			Log.v(TAG, "onPostExecute");
+
+			findViewById(R.id.libtorrent_loading).setVisibility(View.GONE);
 			if (running) {
-				loadingBar.setVisibility(View.GONE);
-				loadingInfo.setVisibility(View.GONE);
-				
 				for (int i = 0; i < piecePriorities.length; i++) {
 					piecePriorities[i] = FilePriority.NORMAL.ordinal();
 				}

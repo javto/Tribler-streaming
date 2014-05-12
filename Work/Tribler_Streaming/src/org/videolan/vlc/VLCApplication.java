@@ -34,114 +34,149 @@ import android.preference.PreferenceManager;
 import android.util.Log;
 
 public class VLCApplication extends Application {
-    public final static String TAG = "VLC/VLCApplication";
-    private static VLCApplication instance;
+	public final static String TAG = "VLC/VLCApplication";
+	private static VLCApplication instance;
 
-    public final static String SLEEP_INTENT = "org.videolan.vlc.SleepIntent";
-    
-    // TRIBLER
- 	private LibTorrent libTorrent = null;
- 	private static int LISTEN_PORT = 0;
- 	private static int LIMIT_UL = 0;
- 	private static int LIMIT_DL = 0;
- 	private static boolean ENCRYPTION = false;
+	public final static String SLEEP_INTENT = "org.videolan.vlc.SleepIntent";
 
- 	public LibTorrent getLibTorrent() {
- 		if (this.libTorrent == null) {
- 			Log.d(TAG,"created new libTorrent from no settings!");
- 			this.libTorrent = new LibTorrent();
- 			this.libTorrent.SetSession(LISTEN_PORT, LIMIT_UL, LIMIT_DL, ENCRYPTION);
- 			this.libTorrent.ResumeSession();
- 		}
- 		return this.libTorrent;
- 	}
- 	
- 	public LibTorrent getLibTorrent(int listenPort, int uploadLimit, int downloadLimit, boolean encryption) {
- 		if (this.libTorrent == null) {
- 			this.libTorrent = new LibTorrent();
- 			LISTEN_PORT = listenPort;
- 			LIMIT_UL = uploadLimit;
- 			LIMIT_DL = downloadLimit;
- 			ENCRYPTION = encryption;
- 			this.libTorrent.SetSession(listenPort, uploadLimit, downloadLimit, encryption);
- 			this.libTorrent.ResumeSession();
- 		}
- 		return this.libTorrent;
- 	}
- 	
- 	public void deleteLibTorrent() {
+	// TRIBLER
+	private LibTorrent libTorrent = null;
+	private static int LISTEN_PORT = 0;
+	private static int LIMIT_UL = 0;
+	private static int LIMIT_DL = 0;
+
+	
+	/*
+	 * requestTimeout is the number of seconds until the current front piece
+	 * request will time out. -1 means that there is not outstanding request.
+	 * 
+	 * peerTimeout is the number of seconds the peer connection should wait (for
+	 * any activity on the peer connection) before closing it due to time out.
+	 * This defaults to 120 seconds, since that's what's specified in the
+	 * protocol specification. After half the time out, a keep alive message is
+	 * sent.
+	 * 
+	 * inactivityTimeout if a peer is uninteresting and uninterested for longer
+	 * than this number of seconds, it will be disconnected. Default is 10
+	 * minutes
+	 */
+	// experimental values:
+	private boolean experimental = true;
+	private static int REQUEST_TIMEOUT = 10;
+	private static int PEER_TIMEOUT = 30;
+	private static int INACTIVITY_TIMEOUT = 30;
+
+	private static boolean ENCRYPTION = false;
+
+	public LibTorrent getLibTorrent() {
+		if (this.libTorrent == null) {
+			Log.d(TAG, "created new libTorrent from no settings!");
+			this.libTorrent = new LibTorrent();
+			this.libTorrent.SetSession(LISTEN_PORT, LIMIT_UL, LIMIT_DL,
+					ENCRYPTION);
+
+			if (experimental) {
+				this.libTorrent.SetSessionTweaks(REQUEST_TIMEOUT, PEER_TIMEOUT,
+						INACTIVITY_TIMEOUT);
+			}
+			this.libTorrent.ResumeSession();
+		}
+		return this.libTorrent;
+	}
+
+	public LibTorrent getLibTorrent(int listenPort, int uploadLimit,
+			int downloadLimit, boolean encryption) {
+		if (this.libTorrent == null) {
+			this.libTorrent = new LibTorrent();
+			LISTEN_PORT = listenPort;
+			LIMIT_UL = uploadLimit;
+			LIMIT_DL = downloadLimit;
+			ENCRYPTION = encryption;
+			this.libTorrent.SetSession(listenPort, uploadLimit, downloadLimit,
+					encryption);
+			if (experimental) {
+				this.libTorrent.SetSessionTweaks(REQUEST_TIMEOUT, PEER_TIMEOUT,
+						INACTIVITY_TIMEOUT);
+			}
+			this.libTorrent.ResumeSession();
+		}
+		return this.libTorrent;
+	}
+
+	public void deleteLibTorrent() {
 		this.libTorrent = null;
- 	}
+	}
 
- 	// \TRIBLER
-    @Override
-    public void onCreate() {
-        super.onCreate();
+	// \TRIBLER
+	@Override
+	public void onCreate() {
+		super.onCreate();
 
-        // Are we using advanced debugging - locale?
-        SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this);
-        String p = pref.getString("set_locale", "");
-        if (p != null && !p.equals("")) {
-            Locale locale;
-            // workaround due to region code
-            if(p.equals("zh-TW")) {
-                locale = Locale.TRADITIONAL_CHINESE;
-            } else if(p.startsWith("zh")) {
-                locale = Locale.CHINA;
-            } else if(p.equals("pt-BR")) {
-                locale = new Locale("pt", "BR");
-            } else if(p.equals("bn-IN") || p.startsWith("bn")) {
-                locale = new Locale("bn", "IN");
-            } else {
-                /**
-                 * Avoid a crash of
-                 * java.lang.AssertionError: couldn't initialize LocaleData for locale
-                 * if the user enters nonsensical region codes.
-                 */
-                if(p.contains("-"))
-                    p = p.substring(0, p.indexOf('-'));
-                locale = new Locale(p);
-            }
-            Locale.setDefault(locale);
-            Configuration config = new Configuration();
-            config.locale = locale;
-            getBaseContext().getResources().updateConfiguration(config,
-                    getBaseContext().getResources().getDisplayMetrics());
-        }
+		// Are we using advanced debugging - locale?
+		SharedPreferences pref = PreferenceManager
+				.getDefaultSharedPreferences(this);
+		String p = pref.getString("set_locale", "");
+		if (p != null && !p.equals("")) {
+			Locale locale;
+			// workaround due to region code
+			if (p.equals("zh-TW")) {
+				locale = Locale.TRADITIONAL_CHINESE;
+			} else if (p.startsWith("zh")) {
+				locale = Locale.CHINA;
+			} else if (p.equals("pt-BR")) {
+				locale = new Locale("pt", "BR");
+			} else if (p.equals("bn-IN") || p.startsWith("bn")) {
+				locale = new Locale("bn", "IN");
+			} else {
+				/**
+				 * Avoid a crash of java.lang.AssertionError: couldn't
+				 * initialize LocaleData for locale if the user enters
+				 * nonsensical region codes.
+				 */
+				if (p.contains("-"))
+					p = p.substring(0, p.indexOf('-'));
+				locale = new Locale(p);
+			}
+			Locale.setDefault(locale);
+			Configuration config = new Configuration();
+			config.locale = locale;
+			getBaseContext().getResources().updateConfiguration(config,
+					getBaseContext().getResources().getDisplayMetrics());
+		}
 
-        instance = this;
+		instance = this;
 
-        // Initialize the database soon enough to avoid any race condition and crash
-        MediaDatabase.getInstance(this);
-        // Prepare cache folder constants
-        AudioUtil.prepareCacheFolder(this);
-    }
+		// Initialize the database soon enough to avoid any race condition and
+		// crash
+		MediaDatabase.getInstance(this);
+		// Prepare cache folder constants
+		AudioUtil.prepareCacheFolder(this);
+	}
 
-    /**
-     * Called when the overall system is running low on memory
-     */
-    @Override
-    public void onLowMemory() {
-        super.onLowMemory();
-        Log.w(TAG, "System is running low on memory");
+	/**
+	 * Called when the overall system is running low on memory
+	 */
+	@Override
+	public void onLowMemory() {
+		super.onLowMemory();
+		Log.w(TAG, "System is running low on memory");
 
-        BitmapCache.getInstance().clear();
-    }
+		BitmapCache.getInstance().clear();
+	}
 
-    /**
-     * @return the main context of the Application
-     */
-    public static Context getAppContext()
-    {
-        return instance;
-    }
+	/**
+	 * @return the main context of the Application
+	 */
+	public static Context getAppContext() {
+		return instance;
+	}
 
-    /**
-     * @return the main resources from the Application
-     */
-    public static Resources getAppResources()
-    {
-        if(instance == null) return null;
-        return instance.getResources();
-    }
+	/**
+	 * @return the main resources from the Application
+	 */
+	public static Resources getAppResources() {
+		if (instance == null)
+			return null;
+		return instance.getResources();
+	}
 }

@@ -1,3 +1,8 @@
+/**
+ *  Written by Jaap van Touw
+ *  see LICENSE.txt for license information
+ */
+
 package org.tribler.triblersvod.gui;
 
 public class TorrentContainer {

@@ -1,8 +1,10 @@
 package com.softwarrior.libtorrent;
 
 /**
- * @author jaap Wrapper class for Libtorrent JNI
+ *  Written by Jaap van Touw
+ *  see LICENSE.txt for license information
  */
+
 public class LibTorrent {
 	static {
 		System.loadLibrary("torrent");
@@ -230,4 +232,29 @@ public class LibTorrent {
 	 *         aborted or otherwise)
 	 */
 	public native boolean GetSessionState();
+
+	/**
+	 * 
+	 * @param requestTimeout
+	 *            is the number of seconds until the current front piece request
+	 *            will time out. This timeout can be adjusted through
+	 *            session_settings::request_timeout. -1 means that there is not
+	 *            outstanding request.
+	 * 
+	 * @param peerTimeout
+	 *            is the number of seconds the peer connection should wait (for
+	 *            any activity on the peer connection) before closing it due to
+	 *            time out. This defaults to 120 seconds, since that's what's
+	 *            specified in the protocol specification. After half the time
+	 *            out, a keep alive message is sent.
+	 *            
+	 * @param inactivityTimeout
+	 *            if a peer is uninteresting and uninterested for longer than
+	 *            this number of seconds, it will be disconnected. Default is 10
+	 *            minutes
+	 * @return
+	 */
+	public native boolean SetSessionTweaks(int requestTimeout, int peerTimeout,
+			int inactivityTimeout);
+
 }

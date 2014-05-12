@@ -1,3 +1,8 @@
+/**
+ *  Written by Arno Bakker
+ *  see LICENSE.txt for license information
+ */
+
 package org.tribler.triblersvod.gui;
 
 public enum FilePriority {
