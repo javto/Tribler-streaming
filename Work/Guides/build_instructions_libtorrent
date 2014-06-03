@@ -23,7 +23,7 @@ path/to/Boost-for-Android
 
 EXTRACT LIBTORRENT FROM RUTRACKER
 Download the RuTracker source:
-svn checkout http://softwarrior.googlecode.com/svn/tags/RutrackerDownloader/2.6.5.5/
+svn checkout http://softwarrior.googlecode.com/svn/tags/RutrackerDownloader/1.6.5.5/
 extract all from the JNI folder.
 
 MODIFY CONTENTS
