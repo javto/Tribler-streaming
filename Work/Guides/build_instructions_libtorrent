@@ -1,7 +1,7 @@
 Build Instructions Libtorrent
 
 BUILD BOOST
-Tirst clone the boost for android project from github:
+Tirst clone the boost for android project from github (tribler streaming works thanks to boost 1_45 libraries):
 git clone https://github.com/MysticTreeGames/Boost-for-Android
 
 Go to the directory in which the project resides, example:
